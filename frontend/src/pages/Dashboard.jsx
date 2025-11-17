@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { db } from '../config/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { User, Mail, MapPin, Link as LinkIcon, Calendar, Building, Github, Star, Lock, Search } from 'lucide-react';
 
 const Dashboard = () => {
@@ -11,10 +13,11 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredRepos, setFilteredRepos] = useState([]);
-  const [filterType, setFilterType] = useState('all'); // 'all', 'public', 'private'
+  const [filterType, setFilterType] = useState('all'); // 'all', 'public', 'collab', 'private'
   const [searchQuery, setSearchQuery] = useState('');
+  const [envCounts, setEnvCounts] = useState({});
   
-  const reposPerPage = 10;
+  const reposPerPage = 16;
 
   console.log('📊 Dashboard: Rendering with user:', user?.login || 'none');
 
@@ -50,8 +53,39 @@ const Dashboard = () => {
       
       // Fetch repositories
       fetchRepositories();
+      
+      // Fetch env file counts
+      fetchEnvCounts();
+      
+      // Refresh env counts every 30 seconds
+      const interval = setInterval(fetchEnvCounts, 30000);
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated, navigate, user, token]);
+
+  const fetchEnvCounts = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const q = query(
+        collection(db, 'envFiles'),
+        where('userId', '==', user.id)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const counts = {};
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const repoFullName = data.repoFullName;
+        counts[repoFullName] = (counts[repoFullName] || 0) + 1;
+      });
+      
+      setEnvCounts(counts);
+    } catch (error) {
+      console.error('Error fetching env counts:', error);
+    }
+  };
 
   // Update filtered repos when repositories, filter, or search query changes
   useEffect(() => {
@@ -59,7 +93,9 @@ const Dashboard = () => {
     
     // Filter by type
     if (filterType === 'public') {
-      filtered = filtered.filter(r => !r.private);
+      filtered = filtered.filter(r => !r.private && r.owner.login === user.login);
+    } else if (filterType === 'collab') {
+      filtered = filtered.filter(r => r.owner.login !== user.login);
     } else if (filterType === 'private') {
       filtered = filtered.filter(r => r.private);
     }
@@ -76,7 +112,7 @@ const Dashboard = () => {
     
     setFilteredRepos(filtered);
     setCurrentPage(1); // Reset to first page when filter changes
-  }, [repositories, filterType, searchQuery]);
+  }, [repositories, filterType, searchQuery, user]);
 
   const fetchRepositories = async () => {
     setLoadingRepos(true);
@@ -197,12 +233,17 @@ const Dashboard = () => {
 
         {/* Repositories Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">Repositories</h2>
-            {loadingRepos && (
-              <span className="text-sm text-muted-foreground animate-pulse">Loading...</span>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold text-foreground">Repositories</h2>
+
+          {loadingRepos && !filteredRepos.length && (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-4 border-muted-foreground/20"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"></div>
+              </div>
+              <p className="text-muted-foreground text-sm animate-pulse">Loading repositories...</p>
+            </div>
+          )}
 
           {/* Search Bar */}
           {repositories.length > 0 && (
@@ -239,7 +280,17 @@ const Dashboard = () => {
                     : 'bg-card border border-border text-foreground hover:bg-card/80'
                 }`}
               >
-                Public ({repositories.filter(r => !r.private).length})
+                Public ({repositories.filter(r => !r.private && r.owner.login === user.login).length})
+              </button>
+              <button
+                onClick={() => setFilterType('collab')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  filterType === 'collab'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border border-border text-foreground hover:bg-card/80'
+                }`}
+              >
+                Collaborations ({repositories.filter(r => r.owner.login !== user.login).length})
               </button>
               <button
                 onClick={() => setFilterType('private')}
@@ -271,9 +322,10 @@ const Dashboard = () => {
               {/* Repositories Grid */}
               <div className="grid md:grid-cols-2 gap-4">
                 {currentRepos.map((repo) => (
-                  <div
+                  <button
                     key={repo.id}
-                    className="bg-card border border-border rounded-lg p-6 hover:border-primary hover:bg-card/50 transition-colors space-y-3 group flex flex-col h-full"
+                    onClick={() => navigate(`/repo/${repo.owner.login}/${repo.name}`)}
+                    className="bg-card border border-border rounded-lg p-6 hover:border-primary hover:bg-card/50 transition-colors space-y-3 group flex flex-col h-full text-left"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -286,6 +338,17 @@ const Dashboard = () => {
                             <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-500 shrink-0" />
                           )}
                         </div>
+                        {repo.owner.login !== user.login && (
+                          <a
+                            href={repo.owner.html_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-primary hover:underline mt-1 block"
+                          >
+                            by {repo.owner.login}
+                          </a>
+                        )}
                       </div>
                       {repo.stargazers_count > 0 && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground shrink-0 ml-2">
@@ -295,10 +358,6 @@ const Dashboard = () => {
                       )}
                     </div>
 
-                    {repo.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{repo.description}</p>
-                    )}
-
                     <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t border-border mt-auto">
                       {repo.language && (
                         <span className="flex items-center gap-2">
@@ -306,83 +365,41 @@ const Dashboard = () => {
                           {repo.language}
                         </span>
                       )}
-                      <span>{repo.private ? '🔒 Private' : '🌐 Public'}</span>
+                      <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                        {envCounts[`${repo.owner.login}/${repo.name}`] || 0} env files
+                      </span>
                     </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={() => navigate(`/repo/${repo.owner.login}/${repo.name}`)}
-                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
-                      >
-                        Manage Env Files
-                      </button>
-                      <a
-                        href={repo.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-background border border-border text-foreground rounded-md hover:bg-card transition-colors text-sm font-medium"
-                      >
-                        View on GitHub
-                      </a>
-                    </div>
-                  </div>
+                  </button>
                 ))}
               </div>
 
-              {/* Pagination Controls */}
+              {/* Simple Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 p-4 bg-card border border-border rounded-lg">
+                <div className="flex items-center justify-center gap-4 mt-6 p-4">
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors text-sm font-medium"
                   >
-                    ← Previous
+                    Previous
                   </button>
-                  
-                  <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          currentPage === page
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-background border border-border text-foreground hover:bg-card'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                  </div>
-
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors text-sm font-medium"
                   >
-                    Next →
+                    Next
                   </button>
                 </div>
               )}
-
-              {/* Pagination Info */}
-              <div className="text-center text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredRepos.length)} of {filteredRepos.length} repositories
-              </div>
             </>
           )}
         </div>
 
-        {/* Info Section */}
-        <div className="bg-card border border-border rounded-lg p-8 text-center">
-          <h3 className="text-xl font-semibold text-foreground mb-2">
-            Environment Variables Management
-          </h3>
-          <p className="text-muted-foreground">
-            Click "Manage Env Files" on any repository to securely store and manage your environment variables!
-          </p>
-        </div>
+
       </div>
     </div>
   );

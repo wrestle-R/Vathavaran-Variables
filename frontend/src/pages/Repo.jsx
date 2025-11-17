@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { db } from '../config/firebase';
 import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { Folder, FileText, Plus, X, Copy, Check, Save, Trash2, ChevronRight, FolderOpen } from 'lucide-react';
+import { Folder, FileText, Plus, X, Copy, Check, Save, Trash2, FolderOpen, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const Repo = () => {
@@ -14,9 +14,8 @@ const Repo = () => {
   const [repoData, setRepoData] = useState(null);
   const [directories, setDirectories] = useState([]);
   const [envFiles, setEnvFiles] = useState([]);
-  const [selectedDirectory, setSelectedDirectory] = useState('root');
+  const [selectedDirectory, setSelectedDirectory] = useState('');
   const [showAddEnv, setShowAddEnv] = useState(false);
-  const [newEnvName, setNewEnvName] = useState('');
   const [envContent, setEnvContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
@@ -31,6 +30,13 @@ const Repo = () => {
     fetchRepoData();
     fetchEnvFiles();
   }, [isAuthenticated, owner, repo]);
+
+  // Auto-select first directory when directories load
+  useEffect(() => {
+    if (directories.length > 0 && !selectedDirectory) {
+      setSelectedDirectory(directories[0].path);
+    }
+  }, [directories]);
 
   const fetchRepoData = async () => {
     try {
@@ -61,13 +67,181 @@ const Repo = () => {
       
       // Filter only directories
       const dirs = contents.filter(item => item.type === 'dir');
-      setDirectories([{ name: 'root', path: '' }, ...dirs.map(d => ({ name: d.name, path: d.path }))]);
+      
+      // Detect project structure intelligently
+      const detectedDirs = await detectProjectStructure(contents, dirs);
+      setDirectories(detectedDirs);
       
     } catch (error) {
       console.error('Error fetching repo data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const detectProjectStructure = async (rootContents, directories) => {
+    const detectedDirs = [];
+    
+    // Helper function to check if directory contains specific files
+    const checkDirectoryContents = async (dirPath) => {
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/contents/${dirPath}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github.v3+json'
+            }
+          }
+        );
+        if (!response.ok) return [];
+        return await response.json();
+      } catch {
+        return [];
+      }
+    };
+
+    // Check if root is a frontend project (Vite/React/Next/etc)
+    const rootFiles = rootContents.filter(item => item.type === 'file').map(f => f.name);
+    const isFrontendRoot = 
+      rootFiles.includes('vite.config.js') ||
+      rootFiles.includes('vite.config.ts') ||
+      rootFiles.includes('next.config.js') ||
+      rootFiles.includes('next.config.ts') ||
+      rootFiles.includes('package.json');
+
+    // Check if root is a backend project
+    const isBackendRoot = 
+      rootFiles.includes('requirements.txt') || // Python
+      rootFiles.includes('go.mod') || // Go
+      rootFiles.includes('Cargo.toml') || // Rust
+      (rootFiles.includes('package.json') && rootFiles.includes('index.js')) || // Node
+      rootFiles.includes('pom.xml') || // Java Maven
+      rootFiles.includes('build.gradle'); // Java Gradle
+
+    // Analyze each directory
+    for (const dir of directories) {
+      const dirName = dir.name.toLowerCase();
+      const dirContents = await checkDirectoryContents(dir.path);
+      const dirFiles = dirContents.filter(item => item.type === 'file').map(f => f.name);
+      
+      let category = dirName;
+      let label = dir.name;
+
+      // Frontend detection
+      if (
+        dirName === 'frontend' ||
+        dirName === 'client' ||
+        dirName === 'web' ||
+        dirName === 'ui' ||
+        dirName === 'app' ||
+        dirFiles.includes('vite.config.js') ||
+        dirFiles.includes('vite.config.ts') ||
+        dirFiles.includes('next.config.js') ||
+        dirFiles.includes('next.config.ts') ||
+        dirFiles.includes('webpack.config.js')
+      ) {
+        category = 'frontend';
+        label = 'Frontend';
+      }
+      // Backend detection
+      else if (
+        dirName === 'backend' ||
+        dirName === 'server' ||
+        dirName === 'api' ||
+        dirName === 'serverless' ||
+        dirFiles.includes('requirements.txt') ||
+        dirFiles.includes('go.mod') ||
+        dirFiles.includes('Cargo.toml') ||
+        (dirFiles.includes('package.json') && dirFiles.includes('index.js'))
+      ) {
+        category = 'backend';
+        label = 'Backend';
+      }
+      // Database/Config detection
+      else if (
+        dirName === 'database' ||
+        dirName === 'db' ||
+        dirName === 'migrations' ||
+        dirName === 'config' ||
+        dirName === 'configuration'
+      ) {
+        category = 'config';
+        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+      }
+      // Mobile app detection
+      else if (
+        dirName === 'mobile' ||
+        dirName === 'android' ||
+        dirName === 'ios' ||
+        dirFiles.includes('pubspec.yaml') || // Flutter
+        dirFiles.includes('build.gradle') // Android
+      ) {
+        category = 'mobile';
+        label = 'Mobile';
+      }
+      // Docs/Assets
+      else if (
+        dirName === 'docs' ||
+        dirName === 'documentation' ||
+        dirName === 'assets' ||
+        dirName === 'public' ||
+        dirName === 'static'
+      ) {
+        category = 'other';
+        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+      }
+      // Default
+      else {
+        category = 'other';
+        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+      }
+
+      detectedDirs.push({
+        name: label,
+        path: dir.path,
+        originalName: dir.name,
+        category: category
+      });
+    }
+
+    // Smart root handling
+    if (directories.length === 0) {
+      // Single directory project - just show root
+      if (isFrontendRoot) {
+        detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
+      } else if (isBackendRoot) {
+        detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
+      } else {
+        detectedDirs.unshift({ name: 'Root', path: '', originalName: 'root', category: 'root' });
+      }
+    } else {
+      // Multi-directory project
+      const hasFrontend = detectedDirs.some(d => d.category === 'frontend');
+      const hasBackend = detectedDirs.some(d => d.category === 'backend');
+      
+      // Only show root if it's a monorepo with env files at root level
+      // or if we can't clearly categorize it
+      if (!hasFrontend && !hasBackend) {
+        // Project structure unclear, show root
+        if (isFrontendRoot) {
+          detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
+        } else if (isBackendRoot) {
+          detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
+        } else {
+          detectedDirs.unshift({ name: 'Project Root', path: '', originalName: 'root', category: 'root' });
+        }
+      } else if (isFrontendRoot && !hasFrontend) {
+        // Root is frontend but no frontend folder detected
+        detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
+      } else if (isBackendRoot && !hasBackend) {
+        // Root is backend but no backend folder detected
+        detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
+      }
+      // Otherwise, don't show root - use categorized folders only
+    }
+
+    return detectedDirs;
   };
 
   const fetchEnvFiles = async () => {
@@ -117,13 +291,17 @@ const Repo = () => {
   };
 
   const handleAddEnv = async () => {
-    if (!newEnvName.trim()) {
-      alert('Please enter an environment name');
+    if (!envContent.trim()) {
+      alert('Please enter environment variables');
       return;
     }
 
     try {
       const formattedContent = parseEnvContent(envContent);
+      
+      // Generate env name from timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const envName = `.env.${timestamp}`;
       
       const envData = {
         userId: user.id,
@@ -131,7 +309,7 @@ const Repo = () => {
         repoFullName: `${owner}/${repo}`,
         repoName: repo,
         directory: selectedDirectory,
-        envName: newEnvName.trim(),
+        envName: envName,
         content: formattedContent,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -140,7 +318,6 @@ const Repo = () => {
       await addDoc(collection(db, 'envFiles'), envData);
       
       // Reset form
-      setNewEnvName('');
       setEnvContent('');
       setShowAddEnv(false);
       
@@ -219,12 +396,25 @@ const Repo = () => {
           >
             ← Back to Dashboard
           </button>
-          <h1 className="text-3xl font-bold text-foreground">
-            {owner}/{repo}
-          </h1>
-          {repoData.description && (
-            <p className="text-muted-foreground">{repoData.description}</p>
-          )}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {owner}/{repo}
+              </h1>
+              {repoData.description && (
+                <p className="text-muted-foreground">{repoData.description}</p>
+              )}
+            </div>
+            <a
+              href={repoData?.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-primary/10 rounded-md transition-colors text-muted-foreground hover:text-primary"
+              title="View on GitHub"
+            >
+              <ExternalLink className="h-5 w-5" />
+            </a>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -236,25 +426,32 @@ const Repo = () => {
                 Directories
               </h2>
               <div className="space-y-1">
-                {directories.map((dir) => (
-                  <button
-                    key={dir.path || 'root'}
-                    onClick={() => setSelectedDirectory(dir.path || 'root')}
-                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                      selectedDirectory === (dir.path || 'root')
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-card/50 text-foreground'
-                    }`}
-                  >
-                    <Folder className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{dir.name}</span>
-                    {filteredEnvFiles.length > 0 && selectedDirectory === (dir.path || 'root') && (
-                      <span className="ml-auto bg-primary-foreground text-primary rounded-full px-2 py-0.5 text-xs">
-                        {envFiles.filter(e => e.directory === (dir.path || 'root')).length}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {directories.map((dir) => {
+                  const envCount = envFiles.filter(e => e.directory === dir.path).length;
+                  return (
+                    <button
+                      key={dir.path}
+                      onClick={() => setSelectedDirectory(dir.path)}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                        selectedDirectory === dir.path
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-card/50 text-foreground'
+                      }`}
+                    >
+                      <Folder className="h-4 w-4 shrink-0" />
+                      <span className="truncate flex-1">{dir.name}</span>
+                      {envCount > 0 && (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          selectedDirectory === dir.path
+                            ? 'bg-primary-foreground text-primary'
+                            : 'bg-primary/10 text-primary'
+                        }`}>
+                          {envCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -264,9 +461,9 @@ const Repo = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">
                 Environment Files
-                {selectedDirectory !== 'root' && (
+                {selectedDirectory && directories.find(d => d.path === selectedDirectory) && (
                   <span className="text-sm text-muted-foreground ml-2">
-                    in /{selectedDirectory}
+                    in {directories.find(d => d.path === selectedDirectory)?.name}
                   </span>
                 )}
               </h2>
@@ -285,19 +482,8 @@ const Repo = () => {
                 <h3 className="text-lg font-semibold text-foreground">Create New Environment File</h3>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Environment Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., .env.local, .env.production"
-                    value={newEnvName}
-                    onChange={(e) => setNewEnvName(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">
-                    Environment Variables (paste your .env content)
+                    Environment Variables
                   </label>
                   <textarea
                     placeholder="VITE_API_KEY=your_api_key&#10;DATABASE_URL=your_database_url&#10;# Comments are supported"
