@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { User, Mail, MapPin, Link as LinkIcon, Calendar, Building } from 'lucide-react';
+import { User, Mail, MapPin, Link as LinkIcon, Calendar, Building, Github, Star, Lock } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useUser();
+  const { user, isAuthenticated, token } = useUser();
+  const [repositories, setRepositories] = useState([]);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [error, setError] = useState(null);
 
   console.log('📊 Dashboard: Rendering with user:', user?.login || 'none');
 
@@ -31,8 +34,44 @@ const Dashboard = () => {
         following: user?.following,
         created_at: user?.created_at
       });
+      
+      // Fetch repositories
+      fetchRepositories();
     }
-  }, [isAuthenticated, navigate, user]);
+  }, [isAuthenticated, navigate, user, token]);
+
+  const fetchRepositories = async () => {
+    setLoadingRepos(true);
+    setError(null);
+    try {
+      console.log('🔄 Dashboard: Fetching repositories...');
+      const response = await fetch('http://localhost:8000/api/repositories', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch repositories');
+      }
+
+      const repos = await response.json();
+      console.log('✅ Dashboard: Repositories fetched successfully:', repos);
+      console.log('📚 Total repositories:', repos.length);
+      console.log('📊 Repository summary:', {
+        total: repos.length,
+        public: repos.filter(r => !r.private).length,
+        private: repos.filter(r => r.private).length,
+        languages: [...new Set(repos.map(r => r.language).filter(Boolean))]
+      });
+      setRepositories(repos);
+    } catch (err) {
+      console.error('❌ Dashboard: Error fetching repositories:', err);
+      setError(err.message);
+    } finally {
+      setLoadingRepos(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -157,6 +196,74 @@ const Dashboard = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Repositories Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Repositories</h2>
+            {loadingRepos && (
+              <span className="text-sm text-muted-foreground animate-pulse">Loading...</span>
+            )}
+          </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive rounded-lg p-4">
+              <p className="text-destructive text-sm">Error: {error}</p>
+            </div>
+          )}
+
+          {repositories.length === 0 && !loadingRepos && !error && (
+            <div className="bg-card border border-border rounded-lg p-8 text-center">
+              <p className="text-muted-foreground">No repositories found</p>
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            {repositories.map((repo) => (
+              <a
+                key={repo.id}
+                href={repo.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-card border border-border rounded-lg p-6 hover:border-primary hover:bg-card/50 transition-colors space-y-3 group"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <Github className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+                      <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {repo.name}
+                      </h3>
+                      {repo.private && (
+                        <Lock className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+                      )}
+                    </div>
+                  </div>
+                  {repo.stargazers_count > 0 && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Star className="h-4 w-4" />
+                      {repo.stargazers_count}
+                    </div>
+                  )}
+                </div>
+
+                {repo.description && (
+                  <p className="text-sm text-muted-foreground">{repo.description}</p>
+                )}
+
+                <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t border-border">
+                  {repo.language && (
+                    <span className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      {repo.language}
+                    </span>
+                  )}
+                  <span>{repo.private ? '🔒 Private' : '🌐 Public'}</span>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* Coming Soon Section */}

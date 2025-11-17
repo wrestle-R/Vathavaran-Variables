@@ -89,9 +89,10 @@ app.get('/api/auth/github/callback', async (req, res) => {
       email: userData.email
     });
 
-    // Redirect to frontend with user data
+    // Redirect to frontend with user data and access token
     const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
-    res.redirect(`${FRONTEND_URL}/auth/callback?user=${userDataEncoded}`);
+    const tokenEncoded = encodeURIComponent(accessToken);
+    res.redirect(`${FRONTEND_URL}/auth/callback?user=${userDataEncoded}&token=${tokenEncoded}`);
   } catch (error) {
     console.error('❌ GitHub OAuth Error:', error.response?.data || error.message);
     res.redirect(`${FRONTEND_URL}/auth?error=auth_failed`);
@@ -123,10 +124,52 @@ app.get('/api/user', async (req, res) => {
   }
 });
 
+// Get user repositories (public and private)
+app.get('/api/repositories', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  console.log('🔍 Fetching repositories request, token:', authHeader ? '✓' : '✗');
+
+  if (!authHeader) {
+    return res.status(401).json({ error: 'No authorization header' });
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Fetch repositories with all visibility types (public, private, forks)
+    // Using affiliation=owner,collaborator,organization_member to get all repos
+    const reposResponse = await axios.get(
+      'https://api.github.com/user/repos?type=all&per_page=100&sort=updated',
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const repositories = reposResponse.data;
+    console.log(`✅ Fetched ${repositories.length} repositories`);
+    console.log('📚 Repositories:', repositories.map(repo => ({
+      name: repo.name,
+      url: repo.html_url,
+      private: repo.private,
+      description: repo.description,
+      language: repo.language,
+      stars: repo.stargazers_count
+    })));
+
+    res.json(repositories);
+  } catch (error) {
+    console.error('❌ Failed to fetch repositories:', error.message);
+    res.status(500).json({ error: 'Failed to fetch repositories' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log('📝 Available endpoints:');
   console.log('  GET  /api/auth/github');
   console.log('  GET  /api/auth/github/callback');
   console.log('  GET  /api/user');
+  console.log('  GET  /api/repositories');
 });

@@ -34,21 +34,24 @@ const Auth = () => {
 
     // Check for user data in URL (from callback)
     const userParam = searchParams.get('user');
-    if (userParam) {
+    const tokenParam = searchParams.get('token');
+    if (userParam && tokenParam) {
       try {
-        console.log('📦 Auth: User data received in URL');
+        console.log('📦 Auth: User data and token received in URL');
         const userData = JSON.parse(decodeURIComponent(userParam));
+        const accessToken = decodeURIComponent(tokenParam);
         console.log('✅ Auth: Parsed user data:', {
           id: userData.id,
           login: userData.login,
           name: userData.name
         });
+        console.log('✅ Auth: Access token received');
         
-        login(userData);
+        login(userData, accessToken);
         console.log('🔀 Auth: User logged in, redirecting to dashboard');
         navigate('/dashboard');
       } catch (err) {
-        console.error('❌ Auth: Error parsing user data:', err);
+        console.error('❌ Auth: Error parsing user data or token:', err);
         setError('Failed to process authentication. Please try again.');
       }
     }

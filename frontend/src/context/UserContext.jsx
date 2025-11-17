@@ -12,51 +12,62 @@ export const useUser = () => {
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔍 UserContext: Checking for stored user...');
-    // Check if user is stored in localStorage
+    console.log('🔍 UserContext: Checking for stored user and token...');
+    // Check if user and token are stored in localStorage
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    if (storedUser && storedToken) {
       try {
         const parsedUser = JSON.parse(storedUser);
         console.log('✅ UserContext: Found stored user:', parsedUser.login);
         setUser(parsedUser);
+        setToken(storedToken);
+        console.log('✅ UserContext: Found stored token');
       } catch (error) {
-        console.error('❌ UserContext: Error parsing stored user:', error);
+        console.error('❌ UserContext: Error parsing stored data:', error);
         localStorage.removeItem('user');
+        localStorage.removeItem('token');
       }
     } else {
-      console.log('ℹ️ UserContext: No stored user found');
+      console.log('ℹ️ UserContext: No stored user/token found');
     }
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, accessToken) => {
     console.log('🔐 UserContext: Logging in user:', userData.login);
     setUser(userData);
+    setToken(accessToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    console.log('✅ UserContext: User stored in localStorage');
+    localStorage.setItem('token', accessToken);
+    console.log('✅ UserContext: User and token stored in localStorage');
   };
 
   const logout = () => {
     console.log('🚪 UserContext: Logging out user');
     setUser(null);
+    setToken(null);
     localStorage.removeItem('user');
-    console.log('✅ UserContext: User removed from localStorage');
+    localStorage.removeItem('token');
+    console.log('✅ UserContext: User and token removed from localStorage');
   };
 
   const value = {
     user,
+    token,
     login,
     logout,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user && !!token
   };
 
   console.log('🔄 UserContext: Current state:', {
     hasUser: !!user,
+    hasToken: !!token,
     loading,
     username: user?.login || 'none'
   });
@@ -67,3 +78,4 @@ export const UserProvider = ({ children }) => {
     </UserContext.Provider>
   );
 };
+
