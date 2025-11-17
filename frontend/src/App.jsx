@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import Repo from './pages/Repo';
 
 console.log('🚀 App: Application starting...');
 
@@ -20,6 +21,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/callback" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/repo/:owner/:repo" element={<Repo />} />
           </Routes>
         </div>
       </UserProvider>

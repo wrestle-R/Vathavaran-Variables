@@ -271,11 +271,8 @@ const Dashboard = () => {
               {/* Repositories Grid */}
               <div className="grid md:grid-cols-2 gap-4">
                 {currentRepos.map((repo) => (
-                  <a
+                  <div
                     key={repo.id}
-                    href={repo.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="bg-card border border-border rounded-lg p-6 hover:border-primary hover:bg-card/50 transition-colors space-y-3 group flex flex-col h-full"
                   >
                     <div className="flex items-start justify-between">
@@ -311,7 +308,24 @@ const Dashboard = () => {
                       )}
                       <span>{repo.private ? '🔒 Private' : '🌐 Public'}</span>
                     </div>
-                  </a>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => navigate(`/repo/${repo.owner.login}/${repo.name}`)}
+                        className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium"
+                      >
+                        Manage Env Files
+                      </button>
+                      <a
+                        href={repo.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-background border border-border text-foreground rounded-md hover:bg-card transition-colors text-sm font-medium"
+                      >
+                        View on GitHub
+                      </a>
+                    </div>
+                  </div>
                 ))}
               </div>
 
@@ -360,13 +374,13 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Coming Soon Section */}
+        {/* Info Section */}
         <div className="bg-card border border-border rounded-lg p-8 text-center">
           <h3 className="text-xl font-semibold text-foreground mb-2">
             Environment Variables Management
           </h3>
           <p className="text-muted-foreground">
-            Coming soon! You'll be able to store and manage your encrypted environment files here.
+            Click "Manage Env Files" on any repository to securely store and manage your environment variables!
           </p>
         </div>
       </div>
