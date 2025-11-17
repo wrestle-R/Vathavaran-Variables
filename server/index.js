@@ -31,8 +31,8 @@ console.log('FRONTEND_URL:', FRONTEND_URL);
 // Route to initiate GitHub OAuth
 app.get('/api/auth/github', (req, res) => {
   console.log('🚀 Initiating GitHub OAuth...');
-const githubAuthUrl =
-  `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo`;
+  const githubAuthUrl =
+    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email`;
   console.log('Redirecting to:', githubAuthUrl);
   res.json({ url: githubAuthUrl });
 });
@@ -136,13 +136,14 @@ app.get('/api/repositories', async (req, res) => {
   try {
     const token = authHeader.replace('Bearer ', '');
     
-    // Fetch repositories with all visibility types (public, private, forks)
-    // Using affiliation=owner,collaborator,organization_member to get all repos
+    // Fetch repositories with all visibility types (public, private, owned)
+    // Using affiliation parameter to include all owned repos
     const reposResponse = await axios.get(
-      'https://api.github.com/user/repos?type=all&per_page=100&sort=updated',
+      'https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&per_page=100&sort=updated&direction=desc',
       {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github.v3+json'
         }
       }
     );
@@ -161,7 +162,8 @@ app.get('/api/repositories', async (req, res) => {
     res.json(repositories);
   } catch (error) {
     console.error('❌ Failed to fetch repositories:', error.message);
-    res.status(500).json({ error: 'Failed to fetch repositories' });
+    console.error('Error details:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch repositories', details: error.response?.data });
   }
 });
 
