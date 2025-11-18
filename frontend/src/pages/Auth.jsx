@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext';
 import { Button } from '../components/ui/button';
 import { Github } from 'lucide-react';
 import axios from 'axios';
+import LiquidEther from '../components/LiquidEther';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -77,9 +78,31 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 mt-20">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 mt-12 relative overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 z-0">
+        <LiquidEther
+          colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+          mouseForce={20}
+          cursorSize={100}
+          isViscous={false}
+          viscous={30}
+          iterationsViscous={32}
+          iterationsPoisson={32}
+          resolution={0.5}
+          isBounce={false}
+          autoDemo={true}
+          autoSpeed={0.5}
+          autoIntensity={2.2}
+          takeoverDuration={0.25}
+          autoResumeDelay={3000}
+          autoRampDuration={0.6}
+        />
+      </div>
+      
+      <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center space-y-4">
+          <img src="/logo_dark_bg.png" alt="Vathavaran" className="h-12 w-12 mx-auto" />
           <h2 className="text-3xl font-bold text-foreground">
             Welcome Back
           </h2>

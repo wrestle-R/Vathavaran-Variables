@@ -386,7 +386,7 @@ const Repo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4 mt-20">
+    <div className="min-h-screen bg-background py-12 px-4 mt-12">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">

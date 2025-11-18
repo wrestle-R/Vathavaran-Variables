@@ -3,6 +3,7 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
+import { User, LogOut, ExternalLink } from 'lucide-react';
 
 const cn = (...classes) => {
   return classes.filter(Boolean).join(" ");
@@ -16,6 +17,7 @@ const Navbar = () => {
   });
   const [visible, setVisible] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useUser();
   const navigate = useNavigate();
@@ -110,7 +112,7 @@ const Navbar = () => {
       >
         <div className="flex w-full items-center justify-between">
           <Link to="/">
-            <motion.h1
+            <motion.div
               animate={{
                 scale: visible ? 0.85 : 1,
               }}
@@ -119,11 +121,11 @@ const Navbar = () => {
                 stiffness: 400,
                 damping: 30,
               }}
-              style={{ color: 'oklch(var(--foreground))' }}
-              className="text-lg font-bold tracking-wider cursor-pointer"
+              className="cursor-pointer flex items-center gap-2"
             >
-              Vathavaran
-            </motion.h1>
+              <img src="/logo_dark_bg.png" alt="Vathavaran" className="h-8 w-8" />
+              <span style={{ color: 'oklch(var(--foreground))' }} className="text-lg font-bold tracking-wider">Vathavaran</span>
+            </motion.div>
           </Link>
 
           <motion.nav
@@ -168,12 +170,9 @@ const Navbar = () => {
             </motion.button>
 
             {isAuthenticated ? (
-              <>
-                <span className="text-sm" style={{ color: 'oklch(var(--foreground))' }}>
-                  {user?.login}
-                </span>
+              <div className="relative">
                 <motion.button
-                  onClick={handleLogout}
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{
@@ -184,17 +183,67 @@ const Navbar = () => {
                   animate={{
                     scale: visible ? 0.9 : 1,
                   }}
-                  className="px-4 py-2 rounded-full text-sm font-medium inline-block tracking-wide"
+                  className="px-4 py-2 rounded-full text-sm font-medium inline-flex items-center gap-2 tracking-wide"
                   style={{
                     backgroundColor: 'oklch(var(--primary))',
                     color: 'oklch(var(--primary-foreground))'
                   }}
                 >
-                  Logout
+                  <User className="h-4 w-4" />
+                  {user?.login}
                 </motion.button>
-              </>
+                
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 30,
+                      }}
+                      className="absolute right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50"
+                      style={{
+                        backgroundColor: 'oklch(var(--card))',
+                        border: '1px solid oklch(var(--border))'
+                      }}
+                    >
+                      <a
+                        href={`https://github.com/${user?.login}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-primary/10 transition-colors"
+                        style={{ color: 'oklch(var(--foreground))' }}
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>View Profile</span>
+                      </a>
+                      <button
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 transition-colors"
+                        style={{ 
+                          color: '#ef4444',
+                          backgroundColor: 'transparent'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Logout</span>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
-              <motion.div
+              <motion.button
+                onClick={() => navigate('/auth')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{
@@ -205,18 +254,14 @@ const Navbar = () => {
                 animate={{
                   scale: visible ? 0.9 : 1,
                 }}
+                className="px-4 py-2 rounded-full text-sm font-medium tracking-wide"
+                style={{
+                  backgroundColor: 'oklch(var(--primary))',
+                  color: 'oklch(var(--primary-foreground))'
+                }}
               >
-                <Link 
-                  to="/auth" 
-                  className="px-4 py-2 rounded-full text-sm font-medium inline-block tracking-wide"
-                  style={{
-                    backgroundColor: 'oklch(var(--primary))',
-                    color: 'oklch(var(--primary-foreground))'
-                  }}
-                >
-                  Sign In
-                </Link>
-              </motion.div>
+                Sign In
+              </motion.button>
             )}
           </div>
         </div>
@@ -240,7 +285,7 @@ const Navbar = () => {
         className="md:hidden flex items-center justify-between px-6 py-3 mt-4 mx-6 rounded-full"
       >
         <Link to="/">
-          <motion.h1
+          <motion.div
             animate={{
               scale: visible ? 0.85 : 1,
             }}
@@ -249,11 +294,11 @@ const Navbar = () => {
               stiffness: 400,
               damping: 30,
             }}
-            style={{ color: 'oklch(var(--foreground))' }}
-            className="text-lg font-extrabold tracking-wider cursor-pointer"
+            className="cursor-pointer flex items-center gap-2"
           >
-            Vathavaran
-          </motion.h1>
+            <img src="/logo_dark_bg.png" alt="Vathavaran" className="h-8 w-8" />
+            <span style={{ color: 'oklch(var(--foreground))' }} className="text-lg font-extrabold tracking-wider">Vathavaran</span>
+          </motion.div>
         </Link>
 
         <div className="flex items-center space-x-2">
@@ -344,19 +389,33 @@ const Navbar = () => {
               ))}
 
               {isAuthenticated ? (
-                <motion.button
-                  onClick={handleLogout}
-                  className="block w-full mt-3 px-4 py-2 rounded-xl text-center font-medium tracking-wide"
-                  style={{
-                    backgroundColor: 'oklch(var(--primary))',
-                    color: 'oklch(var(--primary-foreground))'
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 25 }}
-                >
-                  Logout
-                </motion.button>
+                <>
+                  <a
+                    href={`https://github.com/${user?.login}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left py-2 px-3 rounded-xl transition-colors tracking-wide flex items-center gap-2"
+                    style={{ color: 'oklch(var(--foreground))' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Profile
+                  </a>
+                  <motion.button
+                    onClick={handleLogout}
+                    className="w-full mt-3 px-4 py-2 rounded-xl text-center font-medium tracking-wide flex items-center justify-center gap-2"
+                    style={{
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      color: '#ef4444'
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </motion.button>
+                </>
               ) : (
                 <Link
                   to="/auth"
