@@ -78,7 +78,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 mt-12 relative overflow-hidden">
+    <div className="h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <LiquidEther
@@ -101,17 +101,17 @@ const Auth = () => {
       </div>
       
       <div className="max-w-md w-full space-y-8 relative z-10">
-        <div className="text-center space-y-4">
-          <img src="/logo_dark_bg.png" alt="Vathavaran" className="h-12 w-12 mx-auto" />
-          <h2 className="text-3xl font-bold text-foreground">
-            Welcome Back
-          </h2>
-          <p className="text-muted-foreground">
-            Sign in to access your encrypted environment variables
-          </p>
-        </div>
+        {/* Welcome Box with Button - 80% opacity */}
+        <div className="bg-card/80 border border-border rounded-lg p-8 space-y-6 backdrop-blur-sm">
+          <div className="space-y-4">
+            <h2 className="text-3xl font-bold text-foreground text-center">
+              Welcome Back
+            </h2>
+            <p className="text-muted-foreground text-center">
+              Sign in to access your encrypted environment variables
+            </p>
+          </div>
 
-        <div className="bg-card border border-border rounded-lg p-8 space-y-6">
           {error && (
             <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-sm text-destructive">{error}</p>
@@ -127,22 +127,20 @@ const Auth = () => {
             <Github className="h-5 w-5" />
             <span>{loading ? 'Connecting...' : 'Continue with GitHub'}</span>
           </Button>
-
-          <p className="text-xs text-center text-muted-foreground">
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </p>
         </div>
 
+        {/* Back to Home Button */}
         <div className="text-center">
-          <button
+          <Button
             onClick={() => {
               console.log('🔙 Auth: Back to home clicked');
               navigate('/');
             }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            variant="outline"
+            className="w-full"
           >
             Back to Home
-          </button>
+          </Button>
         </div>
       </div>
     </div>
