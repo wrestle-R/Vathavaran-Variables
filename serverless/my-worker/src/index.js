@@ -4,12 +4,11 @@
  */
 
 // Helper function to handle CORS
-function corsHeaders() {
+function corsHeaders(origin) {
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': origin || '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Credentials': 'true',
   };
 }
 
@@ -17,17 +16,18 @@ function corsHeaders() {
 async function handleRequest(request, env) {
   const url = new URL(request.url);
   const path = url.pathname;
+  const origin = request.headers.get('Origin');
 
   // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, {
-      headers: corsHeaders(),
+      headers: corsHeaders(origin),
     });
   }
 
   // Route: Initiate GitHub OAuth
   if (path === '/api/auth/github' && request.method === 'GET') {
-    return handleGitHubAuth(env);
+    return handleGitHubAuth(env, origin);
   }
 
   // Route: GitHub OAuth callback
@@ -37,23 +37,23 @@ async function handleRequest(request, env) {
 
   // Route: Get user
   if (path === '/api/user' && request.method === 'GET') {
-    return handleGetUser(request);
+    return handleGetUser(request, origin);
   }
 
   // Route: Get repositories
   if (path === '/api/repositories' && request.method === 'GET') {
-    return handleGetRepositories(request);
+    return handleGetRepositories(request, origin);
   }
 
   // 404 for unknown routes
   return new Response('Not Found', { 
     status: 404,
-    headers: corsHeaders(),
+    headers: corsHeaders(origin),
   });
 }
 
 // Handler: Initiate GitHub OAuth
-function handleGitHubAuth(env) {
+function handleGitHubAuth(env, origin) {
   const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID;
   const GITHUB_CALLBACK_URL = env.GITHUB_CALLBACK_URL;
 
@@ -62,7 +62,7 @@ function handleGitHubAuth(env) {
   return new Response(JSON.stringify({ url: githubAuthUrl }), {
     headers: {
       'Content-Type': 'application/json',
-      ...corsHeaders(),
+      ...corsHeaders(origin),
     },
   });
 }
@@ -120,7 +120,7 @@ async function handleGitHubCallback(request, env) {
 }
 
 // Handler: Get user
-async function handleGetUser(request) {
+async function handleGetUser(request, origin) {
   const authHeader = request.headers.get('Authorization');
 
   if (!authHeader) {
@@ -128,7 +128,7 @@ async function handleGetUser(request) {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   }
@@ -146,7 +146,7 @@ async function handleGetUser(request) {
     return new Response(JSON.stringify(userData), {
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   } catch (error) {
@@ -154,14 +154,14 @@ async function handleGetUser(request) {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   }
 }
 
 // Handler: Get repositories
-async function handleGetRepositories(request) {
+async function handleGetRepositories(request, origin) {
   const authHeader = request.headers.get('Authorization');
 
   if (!authHeader) {
@@ -169,7 +169,7 @@ async function handleGetRepositories(request) {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   }
@@ -193,7 +193,7 @@ async function handleGetRepositories(request) {
     return new Response(JSON.stringify(repositories), {
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   } catch (error) {
@@ -204,7 +204,7 @@ async function handleGetRepositories(request) {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
-        ...corsHeaders(),
+        ...corsHeaders(origin),
       },
     });
   }
