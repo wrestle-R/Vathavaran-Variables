@@ -65,7 +65,7 @@ const Auth = () => {
 
     try {
       console.log('📡 Auth: Requesting GitHub OAuth URL from server');
-      const response = await axios.get('http://localhost:8000/api/auth/github');
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/auth/github`);
       console.log('✅ Auth: Received OAuth URL:', response.data.url);
       
       console.log('🔀 Auth: Redirecting to GitHub...');

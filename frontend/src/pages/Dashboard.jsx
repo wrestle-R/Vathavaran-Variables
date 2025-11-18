@@ -119,7 +119,7 @@ const Dashboard = () => {
     setError(null);
     try {
       console.log('🔄 Dashboard: Fetching repositories...');
-      const response = await fetch('http://localhost:8000/api/repositories', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/repositories`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
