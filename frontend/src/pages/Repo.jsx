@@ -386,16 +386,18 @@ const Repo = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background py-12 px-4 mt-20">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <button
+          <Button
             onClick={() => navigate('/dashboard')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
           >
             ← Back to Dashboard
-          </button>
+          </Button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">

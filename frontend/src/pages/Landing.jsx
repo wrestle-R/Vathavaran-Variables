@@ -23,7 +23,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 mt-20">
       <div className="max-w-4xl w-full text-center space-y-12">
         {/* Hero Section */}
         <div className="space-y-6">
