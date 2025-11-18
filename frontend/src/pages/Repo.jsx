@@ -10,7 +10,7 @@ import { validateEnvFormat, encryptEnv, decryptEnv, parseAndFormatEnv } from '..
 const Repo = () => {
   const { owner, repo } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, token } = useUser();
+  const { user, isAuthenticated, token, loading: userLoading } = useUser();
   
   const [repoData, setRepoData] = useState(null);
   const [directories, setDirectories] = useState([]);
@@ -28,14 +28,23 @@ const Repo = () => {
   const [editingValidationErrors, setEditingValidationErrors] = useState([]);
 
   useEffect(() => {
+    // Wait for user context to finish loading before checking authentication
+    if (userLoading) {
+      return;
+    }
+    
+    // Only redirect if user is definitely not authenticated after loading
     if (!isAuthenticated) {
       navigate('/auth');
       return;
     }
     
-    fetchRepoData();
-    fetchEnvFiles();
-  }, [isAuthenticated, owner, repo]);
+    // Fetch data if we have a user and token
+    if (user && token) {
+      fetchRepoData();
+      fetchEnvFiles();
+    }
+  }, [userLoading, isAuthenticated, user, token, owner, repo]);
 
   // Auto-select first directory when directories load
   useEffect(() => {
@@ -125,8 +134,20 @@ const Repo = () => {
       rootFiles.includes('pom.xml') || // Java Maven
       rootFiles.includes('build.gradle'); // Java Gradle
 
+    // Define frontend and backend subdirectories to filter out
+    const frontendSubdirs = ['src', 'public', 'assets', 'components', 'pages', 'hooks', 'lib', 'utils', 'styles', 'dist', 'build', 'node_modules'];
+    const backendSubdirs = ['routes', 'controllers', 'models', 'middleware', 'utils', 'services', 'config', 'logs', 'dist', 'build', 'node_modules', 'venv', 'env'];
+
+    // If root is frontend, filter out frontend subdirectories from the list
+    let dirsToProcess = directories;
+    if (isFrontendRoot) {
+      dirsToProcess = directories.filter(d => !frontendSubdirs.includes(d.name.toLowerCase()));
+    } else if (isBackendRoot) {
+      dirsToProcess = directories.filter(d => !backendSubdirs.includes(d.name.toLowerCase()));
+    }
+
     // Analyze each directory
-    for (const dir of directories) {
+    for (const dir of dirsToProcess) {
       const dirName = dir.name.toLowerCase();
       const dirContents = await checkDirectoryContents(dir.path);
       const dirFiles = dirContents.filter(item => item.type === 'file').map(f => f.name);
@@ -212,47 +233,39 @@ const Repo = () => {
     }
 
     // Smart root handling
-    if (directories.length === 0) {
-      // Single directory project - just show root
+    if (dirsToProcess.length === 0 || detectedDirs.length === 0) {
+      // No directories or all were filtered out - just show root
+      if (isFrontendRoot) {
+        return [{ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' }];
+      } else if (isBackendRoot) {
+        return [{ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' }];
+      } else {
+        return [{ name: 'Root', path: '', originalName: 'root', category: 'root' }];
+      }
+    }
+
+    // Multi-directory project
+    const hasFrontend = detectedDirs.some(d => d.category === 'frontend');
+    const hasBackend = detectedDirs.some(d => d.category === 'backend');
+    
+    // Add root if needed
+    if (!hasFrontend && !hasBackend) {
+      // Project structure unclear, show root
       if (isFrontendRoot) {
         detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
       } else if (isBackendRoot) {
         detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
       } else {
-        detectedDirs.unshift({ name: 'Root', path: '', originalName: 'root', category: 'root' });
+        detectedDirs.unshift({ name: 'Project Root', path: '', originalName: 'root', category: 'root' });
       }
-    } else {
-      // Multi-directory project
-      const hasFrontend = detectedDirs.some(d => d.category === 'frontend');
-      const hasBackend = detectedDirs.some(d => d.category === 'backend');
-      
-      // Only show root if it's a monorepo with env files at root level
-      // or if we can't clearly categorize it
-      if (!hasFrontend && !hasBackend) {
-        // Project structure unclear, show root
-        if (isFrontendRoot) {
-          detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
-        } else if (isBackendRoot) {
-          detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
-        } else {
-          detectedDirs.unshift({ name: 'Project Root', path: '', originalName: 'root', category: 'root' });
-        }
-      } else if (isFrontendRoot && !hasFrontend) {
-        // Root is frontend but no frontend folder detected
-        // Filter out subdirectories that are part of frontend (src, public, etc)
-        const frontendSubdirs = ['src', 'public', 'assets', 'components', 'pages', 'hooks', 'lib', 'utils', 'styles', 'dist', 'build', 'node_modules'];
-        const filteredDirs = detectedDirs.filter(d => !frontendSubdirs.includes(d.originalName.toLowerCase()));
-        // Only add root, don't include filtered subdirectories
-        return [{ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' }, ...filteredDirs];
-      } else if (isBackendRoot && !hasBackend) {
-        // Root is backend but no backend folder detected
-        // Filter out subdirectories that are part of backend
-        const backendSubdirs = ['routes', 'controllers', 'models', 'middleware', 'utils', 'services', 'config', 'logs', 'dist', 'build', 'node_modules', 'venv', 'env'];
-        const filteredDirs = detectedDirs.filter(d => !backendSubdirs.includes(d.originalName.toLowerCase()));
-        return [{ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' }, ...filteredDirs];
-      }
-      // Otherwise, don't show root - use categorized folders only
+    } else if (isFrontendRoot && !hasFrontend) {
+      // Root is frontend but no frontend folder detected
+      detectedDirs.unshift({ name: 'Frontend (Root)', path: '', originalName: 'root', category: 'frontend' });
+    } else if (isBackendRoot && !hasBackend) {
+      // Root is backend but no backend folder detected
+      detectedDirs.unshift({ name: 'Backend (Root)', path: '', originalName: 'root', category: 'backend' });
     }
+    // Otherwise, don't show root - use categorized folders only
 
     return detectedDirs;
   };
@@ -447,6 +460,15 @@ const Repo = () => {
 
   const filteredEnvFiles = envFiles.filter(env => env.directory === selectedDirectory);
 
+  // Show loading state while user context is loading
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -466,7 +488,7 @@ const Repo = () => {
   return (
     <div className="min-h-screen bg-background py-12 px-4 mt-12">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header
+        {/* Header */}
         <div className="space-y-2">
           <Link
             to="/dashboard"
@@ -493,7 +515,7 @@ const Repo = () => {
               <ExternalLink className="h-5 w-5" />
             </a>
           </div>
-        </div> */}
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left Sidebar - Directories */}
