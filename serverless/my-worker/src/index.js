@@ -58,6 +58,7 @@ function handleGitHubAuth(env, origin) {
   const GITHUB_CALLBACK_URL = env.GITHUB_CALLBACK_URL;
 
 const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo:read%20user:email`;
+// const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=repo%20read:user%20user:email`;
 
   return new Response(JSON.stringify({ url: githubAuthUrl }), {
     headers: {
