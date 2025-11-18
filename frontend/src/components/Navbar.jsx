@@ -204,7 +204,7 @@ const Navbar = () => {
                         stiffness: 500,
                         damping: 30,
                       }}
-                      className="absolute right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50"
+                      className="absolute right-0 mt-2 w-48 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-9999"
                       style={{
                         backgroundColor: 'oklch(var(--card))',
                         border: '1px solid oklch(var(--border))'
