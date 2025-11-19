@@ -272,6 +272,8 @@ const Repo = () => {
 
   const fetchEnvFiles = async () => {
     try {
+      console.log('🔍 Fetching env files with:', { userId: user.id, repoFullName: `${owner}/${repo}` });
+      
       const q = query(
         collection(db, 'envFiles'),
         where('userId', '==', user.id),
@@ -279,14 +281,18 @@ const Repo = () => {
       );
       
       const querySnapshot = await getDocs(q);
+      console.log('📦 Query returned:', querySnapshot.size, 'documents');
+      
       const files = [];
       querySnapshot.forEach((doc) => {
+        console.log('📄 Found env file:', doc.id, doc.data());
         files.push({ id: doc.id, ...doc.data() });
       });
       
+      console.log('✅ Set env files:', files.length);
       setEnvFiles(files);
     } catch (error) {
-      console.error('Error fetching env files:', error);
+      console.error('❌ Error fetching env files:', error);
     }
   };
 
