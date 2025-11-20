@@ -496,12 +496,14 @@ const Repo = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-colors"
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            aria-label="Back to Dashboard"
+            className="relative z-50 inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-colors"
           >
             ← Back to Dashboard
-          </Link>
+          </button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">
