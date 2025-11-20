@@ -37,9 +37,25 @@ app.get('/api/auth/github', (req, res) => {
   res.json({ url: githubAuthUrl });
 });
 
+// CLI OAuth - initiates GitHub OAuth for CLI
+app.get('/api/auth/github/cli', (req, res) => {
+  const { redirect_uri } = req.query;
+  console.log('🚀 Initiating GitHub OAuth for CLI...');
+  console.log('CLI Redirect URI:', redirect_uri);
+  
+  // Store redirect_uri in state parameter
+  const state = Buffer.from(redirect_uri).toString('base64');
+  
+  const githubAuthUrl =
+    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email&state=${state}`;
+  
+  console.log('Redirecting to GitHub:', githubAuthUrl);
+  res.redirect(githubAuthUrl);
+});
+
 // GitHub OAuth callback
 app.get('/api/auth/github/callback', async (req, res) => {
-  const { code } = req.query;
+  const { code, state } = req.query;
   console.log('📥 Received callback with code:', code ? '✓' : '✗');
 
   if (!code) {
@@ -89,7 +105,17 @@ app.get('/api/auth/github/callback', async (req, res) => {
       email: userData.email
     });
 
-    // Redirect to frontend with user data and access token
+    // Check if this is CLI auth (has state parameter)
+    if (state) {
+      const cliRedirectUri = Buffer.from(state, 'base64').toString('utf-8');
+      console.log('🔄 CLI OAuth - Redirecting to:', cliRedirectUri);
+      
+      const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
+      const tokenEncoded = encodeURIComponent(accessToken);
+      return res.redirect(`${cliRedirectUri}?user=${userDataEncoded}&token=${tokenEncoded}`);
+    }
+
+    // Regular web auth - Redirect to frontend with user data and access token
     const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
     const tokenEncoded = encodeURIComponent(accessToken);
     res.redirect(`${FRONTEND_URL}/auth/callback?user=${userDataEncoded}&token=${tokenEncoded}`);

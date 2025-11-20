@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import LiquidEther from '../components/LiquidEther';
 import { EncryptedText } from '../components/ui/encrypted-text';
 import MagicBento from '../components/ui/MagicBento';
@@ -8,8 +8,29 @@ import MagicBento from '../components/ui/MagicBento';
 const Landing = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [authMessage, setAuthMessage] = useState(null);
 
   console.log('🏠 Landing: Rendering page, authenticated:', isAuthenticated);
+
+  useEffect(() => {
+    // Check for CLI auth status
+    const authStatus = searchParams.get('auth');
+    if (authStatus === 'success') {
+      setAuthMessage({ type: 'success', text: '✅ CLI Authentication Successful! You can close this window and return to your terminal.' });
+      // Clear the query param after 5 seconds
+      setTimeout(() => {
+        setSearchParams({});
+        setAuthMessage(null);
+      }, 5000);
+    } else if (authStatus === 'failed') {
+      setAuthMessage({ type: 'error', text: '❌ CLI Authentication Failed. Please try again in your terminal.' });
+      setTimeout(() => {
+        setSearchParams({});
+        setAuthMessage(null);
+      }, 5000);
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -25,6 +46,17 @@ const Landing = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col items-center justify-center px-4 mt-12 relative overflow-hidden">
+      {/* CLI Auth Message */}
+      {authMessage && (
+        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-lg ${
+          authMessage.type === 'success' 
+            ? 'bg-green-500/20 border border-green-500 text-green-100' 
+            : 'bg-red-500/20 border border-red-500 text-red-100'
+        } backdrop-blur-sm animate-slide-down`}>
+          <p className="text-center font-medium">{authMessage.text}</p>
+        </div>
+      )}
+
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <LiquidEther

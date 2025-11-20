@@ -1,0 +1,33 @@
+{
+  "name": "vathavaran-cli",
+  "version": "1.0.0",
+  "description": "CLI tool to manage environment variables with Vathavaran",
+  "main": "bin/vathavaran.js",
+  "type": "module",
+  "bin": {
+    "vathavaran": "./bin/vathavaran.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "env",
+    "environment",
+    "variables"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "conf": "^13.1.0",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.6.0",
+    "inquirer": "^9.3.8",
+    "open": "^11.0.0",
+    "ora": "^8.2.0"
+  }
+}
