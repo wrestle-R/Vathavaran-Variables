@@ -23,7 +23,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   
   const navItems = [
-   
+    { name: 'Docs', link: '/docs' }
   ];
 
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -111,7 +111,7 @@ const Navbar = () => {
         className="relative z-60 mx-auto hidden w-full max-w-6xl flex-row items-center justify-between rounded-full px-8 py-3 mb-16 md:flex"
       >
         <div className="flex w-full items-center justify-between">
-          <Link to="/">
+          <Link to="/dashboard">
             <motion.div
               animate={{
                 scale: visible ? 0.85 : 1,
@@ -140,7 +140,7 @@ const Navbar = () => {
             }}
             className="absolute left-1/2 flex -translate-x-1/2 items-center space-x-1"
           >
-            {isAuthenticated && navItems.map((item, idx) => (
+            {navItems.map((item, idx) => (
               <NavItem key={idx} item={item} onNavigate={scrollToSection} />
             ))}
           </motion.nav>
@@ -360,7 +360,7 @@ const Navbar = () => {
                 border: '1px solid oklch(var(--border))'
               }}
             >
-              {isAuthenticated && navItems.map((item, idx) => (
+              {navItems.map((item, idx) => (
                 <motion.a
                   key={idx}
                   href={item.link}

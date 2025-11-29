@@ -6,6 +6,7 @@ import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Repo from './pages/Repo';
+import Docs from './pages/Docs';
 import NotFound from './pages/NotFound';
 
 console.log('🚀 App: Application starting...');
@@ -25,6 +26,7 @@ function App() {
               <Route path="/auth/callback" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/repo/:owner/:repo" element={<Repo />} />
+              <Route path="/docs" element={<Docs />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
