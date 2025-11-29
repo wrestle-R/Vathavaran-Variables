@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaCopy, FaCheck, FaGithub } from 'react-icons/fa';
+import { FaCopy, FaCheck, FaGithub, FaTerminal } from 'react-icons/fa';
 
 const Docs = () => {
   const [copiedId, setCopiedId] = useState(null);
@@ -11,58 +11,24 @@ const Docs = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const CodeBlock = ({ code, id, title = 'Terminal' }) => (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-        <span className="text-sm text-muted-foreground">{title}</span>
-        <button
-          onClick={() => copyToClipboard(code, id)}
-          className="p-1.5 rounded transition-colors bg-background hover:bg-muted"
-        >
-          {copiedId === id ? (
-            <FaCheck className="h-3.5 w-3.5 text-primary" />
-          ) : (
-            <FaCopy className="h-3.5 w-3.5 text-muted-foreground" />
-          )}
-        </button>
+  const CodeBlock = ({ code, id }) => (
+    <div className="relative group">
+      <div className="flex items-center gap-2 mb-2">
+        <FaTerminal className="h-3 w-3 text-primary" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Terminal</span>
       </div>
-      <div className="p-4 font-mono text-sm overflow-x-auto bg-background/50">
+      <div className="bg-card border border-border rounded-lg p-4 font-mono text-sm overflow-x-auto">
         <pre className="text-foreground">
           {code.split('\n').map((line, i) => {
-            // Highlight npm commands
-            if (line.startsWith('npm')) {
-              const parts = line.split(' ');
-              return (
-                <div key={i}>
-                  <span className="text-pink-400">{parts[0]}</span>
-                  <span>{' '}</span>
-                  <span className="text-cyan-400">{parts.slice(1).join(' ')}</span>
-                </div>
-              );
-            }
-            // Highlight vathavaran commands  
-            if (line.startsWith('vathavaran')) {
-              const parts = line.split(' ');
-              return (
-                <div key={i}>
-                  <span className="text-pink-400">{parts[0]}</span>
-                  <span>{' '}</span>
-                  <span className="text-cyan-400">{parts.slice(1).join(' ')}</span>
-                </div>
-              );
-            }
-            // Comments
             if (line.startsWith('#')) {
-              return <div key={i} style={{ color: 'oklch(var(--muted-foreground))' }}>{line}</div>;
+              return <div key={i} className="text-muted-foreground">{line}</div>;
             }
-            // Other commands like git, cd
-            if (line.startsWith('git') || line.startsWith('cd')) {
+            if (line.startsWith('npm') || line.startsWith('vathavaran') || line.startsWith('git') || line.startsWith('cd')) {
               const parts = line.split(' ');
               return (
                 <div key={i}>
-                  <span className="text-pink-400">{parts[0]}</span>
-                  <span>{' '}</span>
-                  <span className="text-cyan-400">{parts.slice(1).join(' ')}</span>
+                  <span className="text-primary">{parts[0]}</span>
+                  <span className="text-foreground">{' '}{parts.slice(1).join(' ')}</span>
                 </div>
               );
             }
@@ -70,45 +36,66 @@ const Docs = () => {
           })}
         </pre>
       </div>
+      <button
+        onClick={() => copyToClipboard(code, id)}
+        className="absolute top-8 right-2 p-2 rounded-md bg-muted/80 hover:bg-muted transition-opacity opacity-0 group-hover:opacity-100"
+      >
+        {copiedId === id ? (
+          <FaCheck className="h-3.5 w-3.5 text-primary" />
+        ) : (
+          <FaCopy className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </button>
     </div>
   );
 
-  const Step = ({ number, title, description, code, id, codeTitle = 'Terminal' }) => (
-    <div className="grid md:grid-cols-2 gap-8 items-start py-12" style={{ borderBottom: '1px solid oklch(var(--border))' }}>
-      <div className="flex gap-4">
-        <div className="shrink-0 w-8 h-8 rounded border flex items-center justify-center text-sm font-medium" style={{ borderColor: 'oklch(var(--border))', color: 'oklch(var(--muted-foreground))' }}>
-          {number}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-3" style={{ color: 'oklch(var(--foreground))' }}>
-            {title}
-          </h3>
-          <div className="text-base leading-relaxed" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            {description}
+  const CommandCard = ({ title, description, code, id, options }) => (
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="bg-card border border-border rounded-xl p-6 space-y-4"
+    >
+      <div>
+        <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-muted-foreground">{description}</p>
+      </div>
+      
+      <CodeBlock code={code} id={id} />
+      
+      {options && (
+        <div className="pt-4 border-t border-border">
+          <p className="text-sm font-medium text-foreground mb-3">Options</p>
+          <div className="grid gap-2">
+            {options.map((opt, i) => (
+              <div key={i} className="flex items-start gap-3 text-sm">
+                <code className="shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs">
+                  {opt.flag}
+                </code>
+                <span className="text-muted-foreground">{opt.desc}</span>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-      <div>
-        <CodeBlock code={code} id={id} title={codeTitle} />
-      </div>
-    </div>
+      )}
+    </motion.div>
   );
 
   return (
-    <div className="min-h-screen pt-20 pb-16" style={{ backgroundColor: 'oklch(var(--background))' }}>
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="min-h-screen pt-24 pb-16" style={{ backgroundColor: 'oklch(var(--background))' }}>
+      <div className="max-w-3xl mx-auto px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-center mb-16"
+          className="mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'oklch(var(--foreground))' }}>
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             CLI Documentation
           </h1>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Manage your environment variables directly from your terminal with seamless GitHub integration
+          <p className="text-lg text-muted-foreground">
+            Manage your environment variables directly from your terminal with seamless GitHub integration.
           </p>
         </motion.div>
 
@@ -117,25 +104,15 @@ const Docs = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
+          className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
             Installation
           </h2>
-          <p className="mb-8" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Install the Vathavaran CLI globally using npm to manage environment variables from any directory.
+          <p className="text-muted-foreground mb-6">
+            Install the CLI globally to access it from any directory.
           </p>
-
-          <Step
-            number="01"
-            title="Install the CLI"
-            description={
-              <p>
-                Install <code className="px-1.5 py-0.5 rounded text-sm" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--foreground))' }}>vathavaran</code> globally using npm. This will give you access to the CLI from anywhere on your system.
-              </p>
-            }
-            code="npm install -g vathavaran"
-            id="install"
-          />
+          <CodeBlock code="npm install -g vathavaran" id="install" />
         </motion.section>
 
         {/* Quick Start */}
@@ -143,50 +120,46 @@ const Docs = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-16"
+          className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
             Quick Start
           </h2>
-          <p className="mb-8" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Get started in just three commands. Login, push your environment variables, and pull them anywhere.
+          <p className="text-muted-foreground mb-6">
+            Get up and running in three simple steps.
           </p>
-
-          <Step
-            number="01"
-            title="Login with GitHub"
-            description={
-              <p>
-                Authenticate using GitHub OAuth. This will open your browser for secure authentication and store your credentials locally.
-              </p>
-            }
-            code="vathavaran login"
-            id="quick-login"
-          />
-
-          <Step
-            number="02"
-            title="Push your environment"
-            description={
-              <p>
-                Encrypt and store your <code className="px-1.5 py-0.5 rounded text-sm" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--foreground))' }}>.env</code> file securely in the cloud. Your variables are encrypted before leaving your machine.
-              </p>
-            }
-            code="vathavaran push"
-            id="quick-push"
-          />
-
-          <Step
-            number="03"
-            title="Pull from anywhere"
-            description={
-              <p>
-                Retrieve your environment variables on any machine. Clone your repo, run pull, and start your app.
-              </p>
-            }
-            code="vathavaran pull"
-            id="quick-pull"
-          />
+          
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                1
+              </div>
+              <div className="flex-1 pt-1">
+                <p className="font-medium text-foreground mb-3">Login with GitHub</p>
+                <CodeBlock code="vathavaran login" id="qs-1" />
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                2
+              </div>
+              <div className="flex-1 pt-1">
+                <p className="font-medium text-foreground mb-3">Push your .env file</p>
+                <CodeBlock code="vathavaran push" id="qs-2" />
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                3
+              </div>
+              <div className="flex-1 pt-1">
+                <p className="font-medium text-foreground mb-3">Pull from anywhere</p>
+                <CodeBlock code="vathavaran pull" id="qs-3" />
+              </div>
+            </div>
+          </div>
         </motion.section>
 
         {/* Commands */}
@@ -194,79 +167,61 @@ const Docs = () => {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-16"
+          className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
             Commands
           </h2>
-          <p className="mb-8" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Full list of available commands with all options.
+          <p className="text-muted-foreground mb-6">
+            All available commands and their options.
           </p>
-
-          <Step
-            number="01"
-            title="Push with options"
-            description={
-              <div className="space-y-3">
-                <p>Push environment variables with custom options:</p>
-                <ul className="space-y-1 text-sm">
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-f, --file</code> — Path to env file</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-o, --owner</code> — Repository owner</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-r, --repo</code> — Repository name</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-d, --directory</code> — Directory path</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-n, --name</code> — File name</li>
-                </ul>
-              </div>
-            }
-            code={`vathavaran push -f .env.production
-vathavaran push --owner myorg --repo myapp
-vathavaran push -d backend -n production.env`}
-            id="cmd-push"
-          />
-
-          <Step
-            number="02"
-            title="Pull with options"
-            description={
-              <div className="space-y-3">
-                <p>Pull environment variables with custom options:</p>
-                <ul className="space-y-1 text-sm">
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-o, --owner</code> — Repository owner</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-r, --repo</code> — Repository name</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>-d, --directory</code> — Directory path</li>
-                  <li><code className="px-1 py-0.5 rounded" style={{ backgroundColor: 'oklch(var(--muted))', color: 'oklch(var(--primary))' }}>--output</code> — Output file path</li>
-                </ul>
-              </div>
-            }
-            code={`vathavaran pull --output .env.local
-vathavaran pull --owner myorg --repo myapp
+          
+          <div className="space-y-4">
+            <CommandCard
+              title="push"
+              description="Encrypt and upload your environment variables to the cloud."
+              code={`vathavaran push
+vathavaran push -f .env.production
+vathavaran push --owner myorg --repo myapp`}
+              id="cmd-push"
+              options={[
+                { flag: '-f, --file', desc: 'Path to env file (default: .env)' },
+                { flag: '-o, --owner', desc: 'Repository owner' },
+                { flag: '-r, --repo', desc: 'Repository name' },
+                { flag: '-d, --directory', desc: 'Directory path' },
+                { flag: '-n, --name', desc: 'Custom filename' },
+              ]}
+            />
+            
+            <CommandCard
+              title="pull"
+              description="Download and decrypt your environment variables."
+              code={`vathavaran pull
+vathavaran pull --output .env.local
 vathavaran pull -d backend`}
-            id="cmd-pull"
-          />
-
-          <Step
-            number="03"
-            title="List stored files"
-            description={
-              <p>
-                Display all your stored environment files grouped by repository. See what you have stored at a glance.
-              </p>
-            }
-            code="vathavaran list"
-            id="cmd-list"
-          />
-
-          <Step
-            number="04"
-            title="Logout"
-            description={
-              <p>
-                Remove stored credentials from your local machine. Use this when switching accounts or on shared machines.
-              </p>
-            }
-            code="vathavaran logout"
-            id="cmd-logout"
-          />
+              id="cmd-pull"
+              options={[
+                { flag: '-o, --owner', desc: 'Repository owner' },
+                { flag: '-r, --repo', desc: 'Repository name' },
+                { flag: '-d, --directory', desc: 'Directory path' },
+                { flag: '--output', desc: 'Output file path' },
+              ]}
+            />
+            
+            <CommandCard
+              title="list"
+              description="Display all stored environment files grouped by repository."
+              code="vathavaran list"
+              id="cmd-list"
+            />
+            
+            <CommandCard
+              title="logout"
+              description="Remove stored credentials from your machine."
+              code="vathavaran logout"
+              id="cmd-logout"
+            />
+          </div>
         </motion.section>
 
         {/* Examples */}
@@ -274,58 +229,50 @@ vathavaran pull -d backend`}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-16"
+          className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
             Examples
           </h2>
-          <p className="mb-8" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Real-world examples for common workflows.
+          <p className="text-muted-foreground mb-6">
+            Common workflows and use cases.
           </p>
-
-          <Step
-            number="01"
-            title="Deploy a new project"
-            description={
-              <p>
-                Clone your repo, pull environment variables, and start your application. Perfect for new team members or deployment.
-              </p>
-            }
-            code={`git clone https://github.com/myorg/myapp.git
+          
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium text-foreground mb-3">Deploy a new project</h3>
+              <CodeBlock 
+                code={`git clone https://github.com/myorg/myapp.git
 cd myapp
 vathavaran pull
-npm install
-npm start`}
-            id="ex-deploy"
-          />
-
-          <Step
-            number="02"
-            title="Multiple environments"
-            description={
-              <p>
-                Store separate environment files for production, staging, and development. Each gets its own secure storage.
-              </p>
-            }
-            code={`vathavaran push -f .env.production -n production
+npm install && npm start`}
+                id="ex-1"
+              />
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-foreground mb-3">Multiple environments</h3>
+              <CodeBlock 
+                code={`vathavaran push -f .env.production -n production
 vathavaran push -f .env.staging -n staging
-vathavaran push -f .env.dev -n dev`}
-            id="ex-envs"
-          />
-
-          <Step
-            number="03"
-            title="Monorepo workflow"
-            description={
-              <p>
-                Work with monorepos by specifying directory paths. Each service gets its own environment file.
-              </p>
-            }
-            code={`vathavaran push -d backend
+vathavaran push -f .env.dev -n development`}
+                id="ex-2"
+              />
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-foreground mb-3">Monorepo workflow</h3>
+              <CodeBlock 
+                code={`# Push each service's env
+vathavaran push -d backend
 vathavaran push -d frontend
+
+# Pull specific service
 vathavaran pull -d backend`}
-            id="ex-mono"
-          />
+                id="ex-3"
+              />
+            </div>
+          </div>
         </motion.section>
 
         {/* Security */}
@@ -333,47 +280,35 @@ vathavaran pull -d backend`}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="mt-16 pb-8"
+          className="mb-16"
         >
-          <h2 className="text-2xl font-bold mb-6" style={{ color: 'oklch(var(--foreground))' }}>
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-4">
             Security
           </h2>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-lg" style={{ backgroundColor: 'oklch(var(--card))', border: '1px solid oklch(var(--border))' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
-                End-to-End Encryption
-              </h3>
-              <p className="text-sm" style={{ color: 'oklch(var(--muted-foreground))' }}>
-                All environment variables are encrypted before leaving your machine and decrypted only when retrieved.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-lg" style={{ backgroundColor: 'oklch(var(--card))', border: '1px solid oklch(var(--border))' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
-                GitHub OAuth
-              </h3>
-              <p className="text-sm" style={{ color: 'oklch(var(--muted-foreground))' }}>
-                Secure authentication using GitHub's OAuth. No passwords stored locally—just a secure token.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-lg" style={{ backgroundColor: 'oklch(var(--card))', border: '1px solid oklch(var(--border))' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
-                Repository Permissions
-              </h3>
-              <p className="text-sm" style={{ color: 'oklch(var(--muted-foreground))' }}>
-                Only users with push access to a repository can store environment files for it.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-lg" style={{ backgroundColor: 'oklch(var(--card))', border: '1px solid oklch(var(--border))' }}>
-              <h3 className="font-semibold mb-2" style={{ color: 'oklch(var(--foreground))' }}>
-                Local Storage
-              </h3>
-              <p className="text-sm" style={{ color: 'oklch(var(--muted-foreground))' }}>
-                Auth tokens are stored securely on your machine using the system keychain.
-              </p>
+          
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="grid gap-4">
+              <div className="flex gap-3">
+                <div className="shrink-0 w-1 bg-primary rounded-full"></div>
+                <div>
+                  <p className="font-medium text-foreground">End-to-End Encryption</p>
+                  <p className="text-sm text-muted-foreground">Variables are encrypted before leaving your machine.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="shrink-0 w-1 bg-primary rounded-full"></div>
+                <div>
+                  <p className="font-medium text-foreground">GitHub OAuth</p>
+                  <p className="text-sm text-muted-foreground">Secure authentication—no passwords stored locally.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="shrink-0 w-1 bg-primary rounded-full"></div>
+                <div>
+                  <p className="font-medium text-foreground">Repository Permissions</p>
+                  <p className="text-sm text-muted-foreground">Only users with push access can store env files.</p>
+                </div>
+              </div>
             </div>
           </div>
         </motion.section>
@@ -383,25 +318,22 @@ vathavaran pull -d backend`}
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="pt-12 text-center"
-          style={{ borderTop: '1px solid oklch(var(--border))' }}
+          className="pt-8 border-t border-border"
         >
-          <p className="mb-5" style={{ color: 'oklch(var(--muted-foreground))' }}>
-            Need help or found an issue?
-          </p>
-          <a
-            href="https://github.com/wrestle-R/Vathavaran-Variables"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all hover:opacity-90"
-            style={{ 
-              backgroundColor: 'oklch(var(--primary))',
-              color: 'oklch(var(--primary-foreground))'
-            }}
-          >
-            <FaGithub className="h-5 w-5" />
-            View on GitHub
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-muted-foreground text-sm">
+              Need help or found an issue?
+            </p>
+            <a
+              href="https://github.com/wrestle-R/Vathavaran-Variables"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <FaGithub className="h-4 w-4" />
+              View on GitHub
+            </a>
+          </div>
         </motion.div>
       </div>
     </div>
