@@ -3,26 +3,17 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
-import { getDb } from './firebase.js';
 import { saveAuth, getAuth, clearAuth, isAuthenticated } from './auth.js';
-import { encryptEnv, decryptEnv } from '../../frontend/src/lib/envUtils.js';
+import { encryptEnv, decryptEnv } from './encryption.js';
 import { githubOAuthLogin } from './oauth.js';
 
-// Helper function to get git config
-function getGitConfig(key) {
-  try {
-    return execSync(`git config --get ${key}`, { encoding: 'utf8' }).trim();
-  } catch (error) {
-    return null;
-  }
-}
+// Backend API URL - defaults to production, can be overridden for local dev
+const BACKEND_URL = process.env.VATHAVARAN_BACKEND_URL || 'https://vathavaran-api.onrender.com';
 
 // Helper function to get GitHub username from git remote URL
 function getGitHubUsername() {
   try {
     const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
-    // Parse GitHub username from URL
-    // Handles both SSH (git@github.com:username/repo.git) and HTTPS (https://github.com/username/repo.git)
     const match = remoteUrl.match(/github\.com[:/]([^/]+)/);
     return match ? match[1] : null;
   } catch (error) {
@@ -34,7 +25,6 @@ function getGitHubUsername() {
 function getGitRepoName() {
   try {
     const remoteUrl = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim();
-    // Extract repo name from URL
     const match = remoteUrl.match(/\/([^/]+?)(\.git)?$/);
     return match ? match[1] : null;
   } catch (error) {
@@ -45,7 +35,6 @@ function getGitRepoName() {
 // Login command with GitHub OAuth
 export async function login() {
   console.log(chalk.blue('\n🔐 Login to Vathavaran\n'));
-  console.log(chalk.yellow('Make sure your backend server is running on http://localhost:8000\n'));
   
   try {
     const { userId, userName, token } = await githubOAuthLogin();
@@ -60,9 +49,8 @@ export async function login() {
   } catch (error) {
     console.log(chalk.red(`\n❌ Failed to login: ${error.message}\n`));
     console.log(chalk.yellow('\nTroubleshooting:'));
-    console.log(chalk.gray('1. Make sure backend is running: cd server && npm run dev'));
-    console.log(chalk.gray('2. Check if port 3456 is available'));
-    console.log(chalk.gray('3. Try again: vathavaran login\n'));
+    console.log(chalk.gray('1. Check your internet connection'));
+    console.log(chalk.gray('2. Try again: vathavaran login\n'));
     process.exit(1);
   }
 }
@@ -83,8 +71,6 @@ export async function pushEnv(options) {
   const auth = getAuth();
 
   try {
-    const db = getDb();
-    
     // Get file path
     const envFile = options.file || '.env';
     
@@ -129,51 +115,37 @@ export async function pushEnv(options) {
     ]);
 
     const repoFullName = `${answers.repoOwner}/${answers.repoName}`;
-
-    // Verify user has access to this repository
-    const spinner = ora('Verifying repository access...').start();
+    const spinner = ora('Encrypting and pushing environment variables...').start();
     
     try {
-      // Check if user has push access to the repository
-      const repoCheck = await fetch(`https://api.github.com/repos/${repoFullName}`, {
-        headers: {
-          'Authorization': `Bearer ${auth.token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
-      });
-      
-      if (!repoCheck.ok) {
-        spinner.fail(chalk.red('Repository not found or you do not have access'));
-        return;
-      }
-      
-      const repoData = await repoCheck.json();
-      
-      // Check if user has push permissions (is owner or collaborator with push access)
-      if (!repoData.permissions || !repoData.permissions.push) {
-        spinner.fail(chalk.red('You do not have push access to this repository'));
-        console.log(chalk.yellow('\n⚠️  You must be the owner or have push access to store environment variables for this repository\n'));
-        return;
-      }
-      
-      spinner.text = 'Encrypting and pushing environment variables...';
-      
-      // Encrypt the entire content
+      // Encrypt the content
       const encryptedContent = encryptEnv(envContent);
       
-      // Save to Firestore with userId as number
-      await db.collection('envFiles').add({
-        userId: auth.userId, // Already stored as number
-        userName: auth.userName,
-        repoFullName: repoFullName,
-        repoName: answers.repoName,
-        directory: answers.directory,
-        envName: answers.envName,
-        content: encryptedContent,
-        isEncrypted: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      // Call backend API
+      const response = await fetch(`${BACKEND_URL}/api/env/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          repoFullName,
+          repoName: answers.repoName,
+          directory: answers.directory,
+          envName: answers.envName,
+          content: encryptedContent
+        })
       });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        spinner.fail(chalk.red(data.error || 'Failed to push environment variables'));
+        if (response.status === 403) {
+          console.log(chalk.yellow('\n⚠️  You must be the owner or have push access to this repository\n'));
+        }
+        return;
+      }
 
       spinner.succeed(chalk.green(`✅ Environment variables encrypted and pushed to ${repoFullName}`));
     } catch (error) {
@@ -194,8 +166,6 @@ export async function pullEnv(options) {
   const auth = getAuth();
 
   try {
-    const db = getDb();
-    
     // Auto-detect git info
     const gitUsername = getGitHubUsername();
     const gitRepoName = getGitRepoName();
@@ -223,49 +193,59 @@ export async function pullEnv(options) {
     ]);
 
     const repoFullName = `${answers.repoOwner}/${answers.repoName}`;
-    
     const spinner = ora('Fetching environment variables...').start();
 
-    // Query Firestore
-    const snapshot = await db.collection('envFiles')
-      .where('userId', '==', auth.userId)
-      .where('repoFullName', '==', repoFullName)
-      .where('directory', '==', answers.directory)
-      .get();
+    try {
+      // Call backend API
+      const response = await fetch(`${BACKEND_URL}/api/env/pull`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          repoFullName,
+          directory: answers.directory
+        })
+      });
 
-    if (snapshot.empty) {
-      spinner.fail(chalk.yellow('No environment files found for this repository'));
-      return;
-    }
-
-    // List available env files
-    const envFiles = [];
-    snapshot.forEach(doc => {
-      envFiles.push({ id: doc.id, ...doc.data() });
-    });
-
-    spinner.stop();
-
-    const { selectedFile } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'selectedFile',
-        message: 'Select environment file:',
-        choices: envFiles.map(f => ({
-          name: `${f.envName} (updated: ${new Date(f.updatedAt).toLocaleString()})`,
-          value: f
-        }))
+      const data = await response.json();
+      
+      if (!response.ok) {
+        spinner.fail(chalk.red(data.error || 'Failed to fetch environment variables'));
+        return;
       }
-    ]);
 
-    // Decrypt content
-    const decryptedContent = decryptEnv(selectedFile.content);
-    
-    // Save to file
-    const outputFile = options.output || selectedFile.envName;
-    writeFileSync(outputFile, decryptedContent);
+      if (!data.envFiles || data.envFiles.length === 0) {
+        spinner.fail(chalk.yellow('No environment files found for this repository'));
+        return;
+      }
 
-    console.log(chalk.green(`✅ Environment variables saved to ${outputFile}`));
+      spinner.stop();
+
+      const { selectedFile } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'selectedFile',
+          message: 'Select environment file:',
+          choices: data.envFiles.map(f => ({
+            name: `${f.envName} (updated: ${new Date(f.updatedAt).toLocaleString()})`,
+            value: f
+          }))
+        }
+      ]);
+
+      // Decrypt content
+      const decryptedContent = decryptEnv(selectedFile.content);
+      
+      // Save to file
+      const outputFile = options.output || selectedFile.envName;
+      writeFileSync(outputFile, decryptedContent);
+
+      console.log(chalk.green(`✅ Environment variables saved to ${outputFile}`));
+    } catch (error) {
+      spinner.fail(chalk.red(`Failed: ${error.message}`));
+    }
   } catch (error) {
     console.log(chalk.red(`❌ Failed to pull: ${error.message}`));
   }
@@ -282,13 +262,22 @@ export async function listEnv(options) {
   const spinner = ora('Fetching your environment files...').start();
 
   try {
-    const db = getDb();
-    
-    const snapshot = await db.collection('envFiles')
-      .where('userId', '==', auth.userId)
-      .get();
+    // Call backend API
+    const response = await fetch(`${BACKEND_URL}/api/env/list`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${auth.token}`
+      }
+    });
 
-    if (snapshot.empty) {
+    const data = await response.json();
+    
+    if (!response.ok) {
+      spinner.fail(chalk.red(data.error || 'Failed to fetch environment files'));
+      return;
+    }
+
+    if (!data.envFiles || data.envFiles.length === 0) {
       spinner.fail(chalk.yellow('No environment files found'));
       return;
     }
@@ -296,14 +285,9 @@ export async function listEnv(options) {
     spinner.stop();
 
     console.log(chalk.blue('\n📋 Your Environment Files:\n'));
-    
-    const envFiles = [];
-    snapshot.forEach(doc => {
-      envFiles.push({ id: doc.id, ...doc.data() });
-    });
 
     // Group by repository
-    const grouped = envFiles.reduce((acc, file) => {
+    const grouped = data.envFiles.reduce((acc, file) => {
       if (!acc[file.repoFullName]) {
         acc[file.repoFullName] = [];
       }

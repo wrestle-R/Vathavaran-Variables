@@ -1,12 +1,17 @@
 {
-  "name": "vathavaran-cli",
+  "name": "vathavaran",
   "version": "1.0.0",
-  "description": "CLI tool to manage environment variables with Vathavaran",
+  "description": "CLI tool to securely manage environment variables across your GitHub repositories",
   "main": "bin/vathavaran.js",
   "type": "module",
   "bin": {
     "vathavaran": "./bin/vathavaran.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,18 +19,26 @@
     "cli",
     "env",
     "environment",
-    "variables"
+    "variables",
+    "dotenv",
+    "secrets",
+    "github"
   ],
-  "author": "",
+  "author": "wrestle-R",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrestle-R/Vathavaran-Variables.git"
+  },
+  "homepage": "https://github.com/wrestle-R/Vathavaran-Variables#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
     "conf": "^13.1.0",
-    "crypto-js": "^4.2.0",
-    "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "firebase-admin": "^13.6.0",
     "inquirer": "^9.3.8",
     "open": "^11.0.0",
     "ora": "^8.2.0"

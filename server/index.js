@@ -3,9 +3,28 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const cookieParser = require('cookie-parser');
+const admin = require('firebase-admin');
 
 const app = express();
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
+
+// Initialize Firebase Admin SDK
+try {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+  console.log('✅ Firebase Admin initialized');
+} catch (error) {
+  console.error('❌ Firebase Admin initialization failed:', error.message);
+}
+
+const db = admin.firestore();
 
 // Middleware
 app.use(cors({
@@ -200,4 +219,129 @@ app.listen(PORT, () => {
   console.log('  GET  /api/auth/github/callback');
   console.log('  GET  /api/user');
   console.log('  GET  /api/repositories');
+  console.log('  POST /api/env/push');
+  console.log('  POST /api/env/pull');
+  console.log('  GET  /api/env/list');
+});
+
+// ============================================
+// CLI Environment Variables API Endpoints
+// ============================================
+
+// Middleware to verify GitHub token and get user info
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No authorization token provided' });
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const userResponse = await axios.get('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    req.user = userResponse.data;
+    req.token = token;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// Push env file
+app.post('/api/env/push', authenticateToken, async (req, res) => {
+  try {
+    const { repoFullName, repoName, directory, envName, content } = req.body;
+    
+    if (!repoFullName || !envName || !content) {
+      return res.status(400).json({ error: 'Missing required fields: repoFullName, envName, content' });
+    }
+
+    // Verify user has push access to the repository
+    const repoCheck = await axios.get(`https://api.github.com/repos/${repoFullName}`, {
+      headers: {
+        'Authorization': `Bearer ${req.token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    });
+
+    if (!repoCheck.data.permissions || !repoCheck.data.permissions.push) {
+      return res.status(403).json({ error: 'You do not have push access to this repository' });
+    }
+
+    // Save to Firestore
+    const docRef = await db.collection('envFiles').add({
+      userId: req.user.id,
+      userName: req.user.login,
+      repoFullName,
+      repoName: repoName || repoFullName.split('/')[1],
+      directory: directory || '',
+      envName,
+      content, // Already encrypted by CLI
+      isEncrypted: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    console.log(`✅ Env pushed: ${envName} for ${repoFullName} by ${req.user.login}`);
+    res.json({ success: true, id: docRef.id });
+  } catch (error) {
+    console.error('❌ Push failed:', error.message);
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Repository not found' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Pull env files (get list for a repo)
+app.post('/api/env/pull', authenticateToken, async (req, res) => {
+  try {
+    const { repoFullName, directory } = req.body;
+    
+    if (!repoFullName) {
+      return res.status(400).json({ error: 'Missing required field: repoFullName' });
+    }
+
+    let query = db.collection('envFiles')
+      .where('userId', '==', req.user.id)
+      .where('repoFullName', '==', repoFullName);
+    
+    if (directory !== undefined && directory !== '') {
+      query = query.where('directory', '==', directory);
+    }
+
+    const snapshot = await query.get();
+    
+    const envFiles = [];
+    snapshot.forEach(doc => {
+      envFiles.push({ id: doc.id, ...doc.data() });
+    });
+
+    console.log(`✅ Pull: Found ${envFiles.length} env files for ${repoFullName} by ${req.user.login}`);
+    res.json({ success: true, envFiles });
+  } catch (error) {
+    console.error('❌ Pull failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// List all env files for user
+app.get('/api/env/list', authenticateToken, async (req, res) => {
+  try {
+    const snapshot = await db.collection('envFiles')
+      .where('userId', '==', req.user.id)
+      .get();
+    
+    const envFiles = [];
+    snapshot.forEach(doc => {
+      envFiles.push({ id: doc.id, ...doc.data() });
+    });
+
+    console.log(`✅ List: Found ${envFiles.length} env files for ${req.user.login}`);
+    res.json({ success: true, envFiles });
+  } catch (error) {
+    console.error('❌ List failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
