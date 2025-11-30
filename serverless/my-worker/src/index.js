@@ -48,7 +48,6 @@ async function firestoreRequest(env, method, path, body = null) {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.FIREBASE_ACCESS_TOKEN || ''}`,
     },
   };
   
@@ -610,7 +609,9 @@ async function handleEnvPull(request, env, origin) {
     });
 
     if (!queryResponse.ok) {
-      throw new Error(`Firestore query failed: ${queryResponse.status}`);
+      const errorText = await queryResponse.text();
+      console.error(`Firestore query failed: ${queryResponse.status}`, errorText);
+      throw new Error(`Firestore query failed: ${queryResponse.status} ${errorText}`);
     }
 
     const results = await queryResponse.json();
@@ -687,7 +688,9 @@ async function handleEnvList(request, env, origin) {
     });
 
     if (!queryResponse.ok) {
-      throw new Error(`Firestore query failed: ${queryResponse.status}`);
+      const errorText = await queryResponse.text();
+      console.error(`Firestore query failed: ${queryResponse.status}`, errorText);
+      throw new Error(`Firestore query failed: ${queryResponse.status} ${errorText}`);
     }
 
     const results = await queryResponse.json();
