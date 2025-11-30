@@ -4,7 +4,7 @@ import chalk from 'chalk';
 
 const CLI_CALLBACK_PORT = 3456;
 // Use environment variables or default to production
-const BACKEND_URL = process.env.VATHAVARAN_BACKEND_URL || 'https://vathavaran-api.onrender.com';
+const BACKEND_URL = process.env.VATHAVARAN_BACKEND_URL || 'https://my-worker.vidyoyo.workers.dev';
 const FRONTEND_URL = process.env.VATHAVARAN_FRONTEND_URL || 'https://vathavaran-variables.vercel.app';
 
 export async function githubOAuthLogin() {

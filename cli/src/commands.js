@@ -8,7 +8,7 @@ import { encryptEnv, decryptEnv } from './encryption.js';
 import { githubOAuthLogin } from './oauth.js';
 
 // Backend API URL - defaults to production, can be overridden for local dev
-const BACKEND_URL = process.env.VATHAVARAN_BACKEND_URL || 'https://vathavaran-api.onrender.com';
+const BACKEND_URL = process.env.VATHAVARAN_BACKEND_URL || 'https://my-worker.vidyoyo.workers.dev';
 
 // Helper function to get GitHub username from git remote URL
 function getGitHubUsername() {
