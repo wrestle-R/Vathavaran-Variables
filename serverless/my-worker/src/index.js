@@ -498,7 +498,7 @@ async function handleEnvPush(request, env, origin) {
 
     // Save to Firebase Firestore
     const data = {
-      userId: auth.user.id.toString(),
+      userId: auth.user.id,
       userName: auth.user.login,
       repoFullName,
       repoName: repoName || repoFullName.split('/')[1],
@@ -564,7 +564,7 @@ async function handleEnvPull(request, env, origin) {
 
     // Query Firebase Firestore for env files
     const projectId = env.FIREBASE_PROJECT_ID;
-    const userId = auth.user.id.toString();
+    const userId = auth.user.id;
     
     // Build structured query to filter by userId and repoFullName
     const structuredQuery = {
@@ -578,7 +578,7 @@ async function handleEnvPull(request, env, origin) {
                 fieldFilter: {
                   field: { fieldPath: 'userId' },
                   op: 'EQUAL',
-                  value: { stringValue: userId }
+                  value: { integerValue: userId.toString() }
                 }
               },
               {
@@ -664,7 +664,7 @@ async function handleEnvList(request, env, origin) {
   try {
     // Query Firebase Firestore for all env files for this user
     const projectId = env.FIREBASE_PROJECT_ID;
-    const userId = auth.user.id.toString();
+    const userId = auth.user.id;
     
     // Build structured query to filter by userId only
     const structuredQuery = {
@@ -674,7 +674,7 @@ async function handleEnvList(request, env, origin) {
           fieldFilter: {
             field: { fieldPath: 'userId' },
             op: 'EQUAL',
-            value: { stringValue: userId }
+            value: { integerValue: userId.toString() }
           }
         }
       }
