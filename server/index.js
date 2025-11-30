@@ -51,7 +51,7 @@ console.log('FRONTEND_URL:', FRONTEND_URL);
 app.get('/api/auth/github', (req, res) => {
   console.log('🚀 Initiating GitHub OAuth...');
   const githubAuthUrl =
-    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email`;
+    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_CALLBACK_URL)}&scope=read:user%20repo%20user:email`;
   console.log('Redirecting to:', githubAuthUrl);
   res.json({ url: githubAuthUrl });
 });
@@ -66,7 +66,7 @@ app.get('/api/auth/github/cli', (req, res) => {
   const state = Buffer.from(redirect_uri).toString('base64');
   
   const githubAuthUrl =
-    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email&state=${state}`;
+    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_CALLBACK_URL)}&scope=read:user%20repo%20user:email&state=${state}`;
   
   console.log('Redirecting to GitHub:', githubAuthUrl);
   res.redirect(githubAuthUrl);

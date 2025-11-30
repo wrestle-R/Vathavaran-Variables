@@ -28,8 +28,10 @@ const Auth = () => {
     // Check for error in URL
     const errorParam = searchParams.get('error');
     if (errorParam) {
-      console.error('❌ Auth: Error in URL params:', errorParam);
-      setError('Authentication failed. Please try again.');
+      const detailsParam = searchParams.get('details');
+      const errorMessage = detailsParam ? `${errorParam}: ${detailsParam}` : errorParam;
+      console.error('❌ Auth: Error in URL params:', errorMessage);
+      setError(`Authentication failed: ${errorMessage}. Please try again.`);
       return;
     }
 
