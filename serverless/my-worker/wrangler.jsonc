@@ -13,17 +13,7 @@
 	"vars": {
 		"FRONTEND_URL": "https://vathavaran-variables.vercel.app",
 		"GITHUB_CALLBACK_URL": "https://my-worker.vidyoyo.workers.dev/api/auth/github/callback"
-	},
-	/**
-	 * KV Namespaces for environment variable storage
-	 * Create KV namespace with: wrangler kv namespace create ENV_STORE
-	 */
-	"kv_namespaces": [
-		{
-			"binding": "ENV_STORE",
-			"id": "1cd985ef3c864e45bca6f2921e4c0f89"
-		}
-	]
+	}
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

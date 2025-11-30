@@ -7,9 +7,98 @@
 function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, DELETE, PATCH',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
+}
+
+// Firebase service account authentication
+async function getFirebaseAccessToken(env) {
+  const projectId = env.FIREBASE_PROJECT_ID;
+  const clientEmail = env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = env.FIREBASE_PRIVATE_KEY;
+  
+  // Create JWT for service account
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT',
+  };
+  
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+  
+  // For now, we'll use an alternative approach with unauthenticated access
+  // You can enable public read/write in Firestore rules for testing
+  // Production: Implement JWT signing or use Firebase Admin REST API key
+  return null;
+}
+
+// Firebase Firestore REST API helpers
+async function firestoreRequest(env, method, path, body = null) {
+  const projectId = env.FIREBASE_PROJECT_ID;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents${path}`;
+  
+  const options = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${env.FIREBASE_ACCESS_TOKEN || ''}`,
+    },
+  };
+  
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+  
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Firestore request failed: ${response.status} ${error}`);
+  }
+  
+  return response.json();
+}
+
+// Convert Firestore document to plain object
+function firestoreDocToObject(doc) {
+  if (!doc.fields) return null;
+  
+  const obj = {};
+  for (const [key, value] of Object.entries(doc.fields)) {
+    if (value.stringValue !== undefined) obj[key] = value.stringValue;
+    else if (value.integerValue !== undefined) obj[key] = parseInt(value.integerValue);
+    else if (value.booleanValue !== undefined) obj[key] = value.booleanValue;
+    else if (value.timestampValue !== undefined) obj[key] = value.timestampValue;
+  }
+  
+  // Extract ID from document name
+  const nameParts = doc.name.split('/');
+  obj.id = nameParts[nameParts.length - 1];
+  
+  return obj;
+}
+
+// Convert plain object to Firestore fields format
+function objectToFirestoreFields(obj) {
+  const fields = {};
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string') {
+      fields[key] = { stringValue: value };
+    } else if (typeof value === 'number') {
+      fields[key] = { integerValue: value.toString() };
+    } else if (typeof value === 'boolean') {
+      fields[key] = { booleanValue: value };
+    }
+  }
+  
+  return fields;
 }
 
 // Helper function to parse URL and route requests
@@ -408,10 +497,9 @@ async function handleEnvPush(request, env, origin) {
       });
     }
 
-    // Save to KV storage (simpler than Firestore for Cloudflare Workers)
-    const key = `env:${auth.user.id}:${repoFullName}:${directory || ''}:${envName}`;
+    // Save to Firebase Firestore
     const data = {
-      userId: auth.user.id,
+      userId: auth.user.id.toString(),
       userName: auth.user.login,
       repoFullName,
       repoName: repoName || repoFullName.split('/')[1],
@@ -423,13 +511,15 @@ async function handleEnvPush(request, env, origin) {
       updatedAt: new Date().toISOString(),
     };
 
-    // Store in KV if available, otherwise return success (you'll need to bind KV in wrangler.jsonc)
-    if (env.ENV_STORE) {
-      await env.ENV_STORE.put(key, JSON.stringify(data));
-    }
+    const firestoreDoc = {
+      fields: objectToFirestoreFields(data)
+    };
+
+    const result = await firestoreRequest(env, 'POST', '/envFiles', firestoreDoc);
+    const docId = result.name.split('/').pop();
 
     console.log(`✅ Env pushed: ${envName} for ${repoFullName} by ${auth.user.login}`);
-    return new Response(JSON.stringify({ success: true, id: key }), {
+    return new Response(JSON.stringify({ success: true, id: docId }), {
       headers: {
         'Content-Type': 'application/json',
         ...corsHeaders(origin),
@@ -473,18 +563,67 @@ async function handleEnvPull(request, env, origin) {
       });
     }
 
-    const envFiles = [];
+    // Query Firebase Firestore for env files
+    const projectId = env.FIREBASE_PROJECT_ID;
+    const userId = auth.user.id.toString();
     
-    // If KV is available, query it
-    if (env.ENV_STORE) {
-      const prefix = `env:${auth.user.id}:${repoFullName}:${directory || ''}`;
-      const list = await env.ENV_STORE.list({ prefix });
-      
-      for (const key of list.keys) {
-        const value = await env.ENV_STORE.get(key.name);
-        if (value) {
-          const data = JSON.parse(value);
-          envFiles.push({ id: key.name, ...data });
+    // Build structured query to filter by userId and repoFullName
+    const structuredQuery = {
+      structuredQuery: {
+        from: [{ collectionId: 'envFiles' }],
+        where: {
+          compositeFilter: {
+            op: 'AND',
+            filters: [
+              {
+                fieldFilter: {
+                  field: { fieldPath: 'userId' },
+                  op: 'EQUAL',
+                  value: { stringValue: userId }
+                }
+              },
+              {
+                fieldFilter: {
+                  field: { fieldPath: 'repoFullName' },
+                  op: 'EQUAL',
+                  value: { stringValue: repoFullName }
+                }
+              },
+              {
+                fieldFilter: {
+                  field: { fieldPath: 'directory' },
+                  op: 'EQUAL',
+                  value: { stringValue: directory || '' }
+                }
+              }
+            ]
+          }
+        }
+      }
+    };
+
+    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+    const queryResponse = await fetch(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(structuredQuery)
+    });
+
+    if (!queryResponse.ok) {
+      throw new Error(`Firestore query failed: ${queryResponse.status}`);
+    }
+
+    const results = await queryResponse.json();
+    const envFiles = [];
+
+    // Parse query results
+    if (Array.isArray(results)) {
+      for (const result of results) {
+        if (result.document) {
+          const envFile = firestoreDocToObject(result.document);
+          if (envFile) {
+            envFiles.push(envFile);
+          }
         }
       }
     }
@@ -522,18 +661,46 @@ async function handleEnvList(request, env, origin) {
   }
 
   try {
-    const envFiles = [];
+    // Query Firebase Firestore for all env files for this user
+    const projectId = env.FIREBASE_PROJECT_ID;
+    const userId = auth.user.id.toString();
     
-    // If KV is available, list all env files for user
-    if (env.ENV_STORE) {
-      const prefix = `env:${auth.user.id}:`;
-      const list = await env.ENV_STORE.list({ prefix });
-      
-      for (const key of list.keys) {
-        const value = await env.ENV_STORE.get(key.name);
-        if (value) {
-          const data = JSON.parse(value);
-          envFiles.push({ id: key.name, ...data });
+    // Build structured query to filter by userId only
+    const structuredQuery = {
+      structuredQuery: {
+        from: [{ collectionId: 'envFiles' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'userId' },
+            op: 'EQUAL',
+            value: { stringValue: userId }
+          }
+        }
+      }
+    };
+
+    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+    const queryResponse = await fetch(queryUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(structuredQuery)
+    });
+
+    if (!queryResponse.ok) {
+      throw new Error(`Firestore query failed: ${queryResponse.status}`);
+    }
+
+    const results = await queryResponse.json();
+    const envFiles = [];
+
+    // Parse query results
+    if (Array.isArray(results)) {
+      for (const result of results) {
+        if (result.document) {
+          const envFile = firestoreDocToObject(result.document);
+          if (envFile) {
+            envFiles.push(envFile);
+          }
         }
       }
     }
