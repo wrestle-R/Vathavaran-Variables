@@ -1,6 +1,6 @@
 /**
  * Cloudflare Worker for GitHub OAuth and API
- * Handles GitHub authentication and repository fetching
+ * Handles GitHub authentication, repository fetching, and environment variable management
  */
 
 // Helper function to handle CORS
@@ -10,6 +10,107 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
+}
+
+// Initialize Firestore REST API helper
+class FirestoreAPI {
+  constructor(env) {
+    this.projectId = env.FIREBASE_PROJECT_ID;
+    this.clientEmail = env.FIREBASE_CLIENT_EMAIL;
+    this.privateKey = env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    this.baseUrl = `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents`;
+  }
+
+  async getAccessToken() {
+    // Create JWT for Firestore authentication
+    const header = { alg: 'RS256', typ: 'JWT' };
+    const now = Math.floor(Date.now() / 1000);
+    const claim = {
+      iss: this.clientEmail,
+      scope: 'https://www.googleapis.com/auth/datastore',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now,
+    };
+
+    // Note: In production Cloudflare Worker, you'd use a library or Web Crypto API
+    // For simplicity, we'll use basic auth or stored token
+    // This is a placeholder - you may need to use a JWT library compatible with Workers
+    
+    // For now, return a simple implementation note
+    throw new Error('JWT signing needs to be implemented with Web Crypto API or compatible library');
+  }
+
+  async addDocument(collection, data) {
+    try {
+      const response = await fetch(`${this.baseUrl}/${collection}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fields: this.toFirestoreFields(data) }),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Firestore add error:', error);
+      throw error;
+    }
+  }
+
+  async queryDocuments(collection, filters) {
+    try {
+      const query = {
+        structuredQuery: {
+          from: [{ collectionId: collection }],
+          where: this.buildWhereClause(filters),
+        },
+      };
+
+      const response = await fetch(`${this.baseUrl}:runQuery`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(query),
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Firestore query error:', error);
+      throw error;
+    }
+  }
+
+  toFirestoreFields(obj) {
+    const fields = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'string') {
+        fields[key] = { stringValue: value };
+      } else if (typeof value === 'number') {
+        fields[key] = { integerValue: value.toString() };
+      } else if (typeof value === 'boolean') {
+        fields[key] = { booleanValue: value };
+      }
+    }
+    return fields;
+  }
+
+  buildWhereClause(filters) {
+    const conditions = [];
+    for (const [field, value] of Object.entries(filters)) {
+      conditions.push({
+        fieldFilter: {
+          field: { fieldPath: field },
+          op: 'EQUAL',
+          value: typeof value === 'string' 
+            ? { stringValue: value }
+            : { integerValue: value.toString() },
+        },
+      });
+    }
+    return conditions.length > 1
+      ? { compositeFilter: { op: 'AND', filters: conditions } }
+      : conditions[0];
+  }
 }
 
 // Helper function to parse URL and route requests
@@ -30,6 +131,11 @@ async function handleRequest(request, env) {
     return handleGitHubAuth(env, origin);
   }
 
+  // Route: CLI GitHub OAuth
+  if (path === '/api/auth/github/cli' && request.method === 'GET') {
+    return handleGitHubAuthCLI(request, env);
+  }
+
   // Route: GitHub OAuth callback
   if (path === '/api/auth/github/callback' && request.method === 'GET') {
     return handleGitHubCallback(request, env);
@@ -45,6 +151,21 @@ async function handleRequest(request, env) {
     return handleGetRepositories(request, origin);
   }
 
+  // Route: Push env file
+  if (path === '/api/env/push' && request.method === 'POST') {
+    return handleEnvPush(request, env, origin);
+  }
+
+  // Route: Pull env files
+  if (path === '/api/env/pull' && request.method === 'POST') {
+    return handleEnvPull(request, env, origin);
+  }
+
+  // Route: List env files
+  if (path === '/api/env/list' && request.method === 'GET') {
+    return handleEnvList(request, env, origin);
+  }
+
   // 404 for unknown routes
   return new Response('Not Found', { 
     status: 404,
@@ -57,8 +178,7 @@ function handleGitHubAuth(env, origin) {
   const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID;
   const GITHUB_CALLBACK_URL = env.GITHUB_CALLBACK_URL;
 
-const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo:read%20user:email`;
-// const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=repo%20read:user%20user:email`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email`;
 
   return new Response(JSON.stringify({ url: githubAuthUrl }), {
     headers: {
@@ -68,14 +188,36 @@ const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITH
   });
 }
 
+// Handler: CLI GitHub OAuth
+function handleGitHubAuthCLI(request, env) {
+  const url = new URL(request.url);
+  const redirectUri = url.searchParams.get('redirect_uri');
+  
+  console.log('🚀 Initiating GitHub OAuth for CLI...');
+  console.log('CLI Redirect URI:', redirectUri);
+  
+  const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID;
+  const GITHUB_CALLBACK_URL = env.GITHUB_CALLBACK_URL;
+  
+  // Store redirect_uri in state parameter
+  const state = btoa(redirectUri);
+  
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email&state=${state}`;
+  
+  console.log('Redirecting to GitHub:', githubAuthUrl);
+  return Response.redirect(githubAuthUrl, 302);
+}
+
 // Handler: GitHub OAuth callback
 async function handleGitHubCallback(request, env) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
   const FRONTEND_URL = env.FRONTEND_URL || 'http://localhost:5173';
 
-  console.log('GitHub OAuth Callback:', {
+  console.log('📥 GitHub OAuth Callback:', {
     hasCode: !!code,
+    hasState: !!state,
     hasClientId: !!env.GITHUB_CLIENT_ID,
     hasClientSecret: !!env.GITHUB_CLIENT_SECRET,
     callbackUrl: env.GITHUB_CALLBACK_URL,
@@ -83,7 +225,7 @@ async function handleGitHubCallback(request, env) {
   });
 
   if (!code) {
-    console.error('No code provided in callback');
+    console.error('❌ No code provided in callback');
     return Response.redirect(`${FRONTEND_URL}/auth?error=no_code`, 302);
   }
 
@@ -135,9 +277,19 @@ async function handleGitHubCallback(request, env) {
     }
 
     const userData = await userResponse.json();
-    console.log('User data received:', { login: userData.login, id: userData.id });
+    console.log('✅ User data received:', { login: userData.login, id: userData.id, name: userData.name, email: userData.email });
 
-    // Redirect to frontend with user data and access token
+    // Check if this is CLI auth (has state parameter)
+    if (state) {
+      const cliRedirectUri = atob(state);
+      console.log('🔄 CLI OAuth - Redirecting to:', cliRedirectUri);
+      
+      const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
+      const tokenEncoded = encodeURIComponent(accessToken);
+      return Response.redirect(`${cliRedirectUri}?user=${userDataEncoded}&token=${tokenEncoded}`, 302);
+    }
+
+    // Regular web auth - Redirect to frontend with user data and access token
     const userDataEncoded = encodeURIComponent(JSON.stringify(userData));
     const tokenEncoded = encodeURIComponent(accessToken);
     
@@ -256,6 +408,244 @@ async function handleGetRepositories(request, origin) {
       error: 'Failed to fetch repositories',
       details: error.message 
     }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+}
+
+// ============================================
+// Authentication Middleware
+// ============================================
+async function authenticateToken(request) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { error: 'No authorization token provided', status: 401 };
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'Cloudflare-Worker',
+      }
+    });
+
+    if (!userResponse.ok) {
+      return { error: 'Invalid or expired token', status: 401 };
+    }
+
+    const user = await userResponse.json();
+    return { user, token };
+  } catch (error) {
+    return { error: 'Authentication failed', status: 401 };
+  }
+}
+
+// ============================================
+// Environment Variables API Handlers
+// ============================================
+
+// Handler: Push env file
+async function handleEnvPush(request, env, origin) {
+  const auth = await authenticateToken(request);
+  if (auth.error) {
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: auth.status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+
+  try {
+    const { repoFullName, repoName, directory, envName, content } = await request.json();
+    
+    if (!repoFullName || !envName || !content) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: repoFullName, envName, content' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders(origin),
+        },
+      });
+    }
+
+    // Verify user has push access to the repository
+    const repoCheck = await fetch(`https://api.github.com/repos/${repoFullName}`, {
+      headers: {
+        'Authorization': `Bearer ${auth.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Cloudflare-Worker',
+      }
+    });
+
+    if (!repoCheck.ok) {
+      return new Response(JSON.stringify({ error: 'Repository not found' }), {
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders(origin),
+        },
+      });
+    }
+
+    const repoData = await repoCheck.json();
+    if (!repoData.permissions || !repoData.permissions.push) {
+      return new Response(JSON.stringify({ error: 'You do not have push access to this repository' }), {
+        status: 403,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders(origin),
+        },
+      });
+    }
+
+    // Save to KV storage (simpler than Firestore for Cloudflare Workers)
+    const key = `env:${auth.user.id}:${repoFullName}:${directory || ''}:${envName}`;
+    const data = {
+      userId: auth.user.id,
+      userName: auth.user.login,
+      repoFullName,
+      repoName: repoName || repoFullName.split('/')[1],
+      directory: directory || '',
+      envName,
+      content, // Already encrypted by CLI
+      isEncrypted: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Store in KV if available, otherwise return success (you'll need to bind KV in wrangler.jsonc)
+    if (env.ENV_STORE) {
+      await env.ENV_STORE.put(key, JSON.stringify(data));
+    }
+
+    console.log(`✅ Env pushed: ${envName} for ${repoFullName} by ${auth.user.login}`);
+    return new Response(JSON.stringify({ success: true, id: key }), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  } catch (error) {
+    console.error('❌ Push failed:', error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+}
+
+// Handler: Pull env files
+async function handleEnvPull(request, env, origin) {
+  const auth = await authenticateToken(request);
+  if (auth.error) {
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: auth.status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+
+  try {
+    const { repoFullName, directory } = await request.json();
+    
+    if (!repoFullName) {
+      return new Response(JSON.stringify({ error: 'Missing required field: repoFullName' }), {
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders(origin),
+        },
+      });
+    }
+
+    const envFiles = [];
+    
+    // If KV is available, query it
+    if (env.ENV_STORE) {
+      const prefix = `env:${auth.user.id}:${repoFullName}:${directory || ''}`;
+      const list = await env.ENV_STORE.list({ prefix });
+      
+      for (const key of list.keys) {
+        const value = await env.ENV_STORE.get(key.name);
+        if (value) {
+          const data = JSON.parse(value);
+          envFiles.push({ id: key.name, ...data });
+        }
+      }
+    }
+
+    console.log(`✅ Pull: Found ${envFiles.length} env files for ${repoFullName} by ${auth.user.login}`);
+    return new Response(JSON.stringify({ success: true, envFiles }), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  } catch (error) {
+    console.error('❌ Pull failed:', error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+}
+
+// Handler: List all env files
+async function handleEnvList(request, env, origin) {
+  const auth = await authenticateToken(request);
+  if (auth.error) {
+    return new Response(JSON.stringify({ error: auth.error }), {
+      status: auth.status,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+
+  try {
+    const envFiles = [];
+    
+    // If KV is available, list all env files for user
+    if (env.ENV_STORE) {
+      const prefix = `env:${auth.user.id}:`;
+      const list = await env.ENV_STORE.list({ prefix });
+      
+      for (const key of list.keys) {
+        const value = await env.ENV_STORE.get(key.name);
+        if (value) {
+          const data = JSON.parse(value);
+          envFiles.push({ id: key.name, ...data });
+        }
+      }
+    }
+
+    console.log(`✅ List: Found ${envFiles.length} env files for ${auth.user.login}`);
+    return new Response(JSON.stringify({ success: true, envFiles }), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  } catch (error) {
+    console.error('❌ List failed:', error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
