@@ -77,7 +77,7 @@ function handleGitHubAuth(env, origin) {
   const GITHUB_CLIENT_ID = env.GITHUB_CLIENT_ID;
   const GITHUB_CALLBACK_URL = env.GITHUB_CALLBACK_URL;
 
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_CALLBACK_URL)}&scope=read:user%20repo%20user:email`;
 
   return new Response(JSON.stringify({ url: githubAuthUrl }), {
     headers: {
@@ -101,7 +101,7 @@ function handleGitHubAuthCLI(request, env) {
   // Store redirect_uri in state parameter
   const state = btoa(redirectUri);
   
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${GITHUB_CALLBACK_URL}&scope=read:user%20repo%20user:email&state=${state}`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_CALLBACK_URL)}&scope=read:user%20repo%20user:email&state=${state}`;
   
   console.log('Redirecting to GitHub:', githubAuthUrl);
   return Response.redirect(githubAuthUrl, 302);
@@ -130,6 +130,8 @@ async function handleGitHubCallback(request, env) {
 
   if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET) {
     console.error('Missing GitHub credentials in environment');
+    console.error('GITHUB_CLIENT_ID:', env.GITHUB_CLIENT_ID ? 'Set' : 'NOT SET');
+    console.error('GITHUB_CLIENT_SECRET:', env.GITHUB_CLIENT_SECRET ? 'Set' : 'NOT SET');
     return Response.redirect(`${FRONTEND_URL}/auth?error=missing_credentials`, 302);
   }
 
@@ -157,7 +159,8 @@ async function handleGitHubCallback(request, env) {
 
     if (!accessToken) {
       console.error('No access token received:', tokenData);
-      return Response.redirect(`${FRONTEND_URL}/auth?error=no_token`, 302);
+      console.error('Full token response:', JSON.stringify(tokenData, null, 2));
+      return Response.redirect(`${FRONTEND_URL}/auth?error=no_token&details=${encodeURIComponent(tokenData.error || 'unknown')}`, 302);
     }
 
     // Get user data
