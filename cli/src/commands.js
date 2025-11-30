@@ -34,7 +34,7 @@ function getGitRepoName() {
 
 // Login command with GitHub OAuth
 export async function login() {
-  console.log(chalk.blue('\n🔐 Login to Vathavaran\n'));
+  console.log(chalk.blue('\n🔐 Login to Varte\n'));
   
   try {
     const { userId, userName, token } = await githubOAuthLogin();
@@ -50,7 +50,7 @@ export async function login() {
     console.log(chalk.red(`\n❌ Failed to login: ${error.message}\n`));
     console.log(chalk.yellow('\nTroubleshooting:'));
     console.log(chalk.gray('1. Check your internet connection'));
-    console.log(chalk.gray('2. Try again: vathavaran login\n'));
+    console.log(chalk.gray('2. Try again: varte login\n'));
     process.exit(1);
   }
 }
@@ -64,7 +64,7 @@ export async function logout() {
 // Push env command
 export async function pushEnv(options) {
   if (!isAuthenticated()) {
-    console.log(chalk.red('❌ Not authenticated. Please run: vathavaran login'));
+    console.log(chalk.red('❌ Not authenticated. Please run: varte login'));
     return;
   }
 
@@ -129,6 +129,7 @@ export async function pushEnv(options) {
           'Authorization': `Bearer ${auth.token}`
         },
         body: JSON.stringify({
+          userId: Number(auth.userId),
           repoFullName,
           repoName: answers.repoName,
           directory: answers.directory,
@@ -159,7 +160,7 @@ export async function pushEnv(options) {
 // Pull env command
 export async function pullEnv(options) {
   if (!isAuthenticated()) {
-    console.log(chalk.red('❌ Not authenticated. Please run: vathavaran login'));
+    console.log(chalk.red('❌ Not authenticated. Please run: varte login'));
     return;
   }
 
@@ -254,7 +255,7 @@ export async function pullEnv(options) {
 // List env command
 export async function listEnv(options) {
   if (!isAuthenticated()) {
-    console.log(chalk.red('❌ Not authenticated. Please run: vathavaran login'));
+    console.log(chalk.red('❌ Not authenticated. Please run: varte login'));
     return;
   }
 

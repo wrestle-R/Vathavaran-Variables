@@ -7,18 +7,18 @@ import { login, logout, pushEnv, pullEnv, listEnv } from '../src/commands.js';
 const program = new Command();
 
 program
-  .name('vathavaran')
+  .name('varte')
   .description('CLI tool to securely manage environment variables across your GitHub repositories')
   .version('1.0.0');
 
 program
   .command('login')
-  .description('Login to Vathavaran using GitHub OAuth')
+  .description('Login to Varte using GitHub OAuth')
   .action(login);
 
 program
   .command('logout')
-  .description('Logout from Vathavaran')
+  .description('Logout from Varte')
   .action(logout);
 
 program
