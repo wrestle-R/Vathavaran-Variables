@@ -1,12 +1,33 @@
-// Simple encryption/decryption utility (base64 encoding for simplicity)
-// For production, use a proper encryption library
+// Proper encryption using CryptoJS AES
+import CryptoJS from 'crypto-js';
+
+// Use a consistent encryption key - in production, this should be stored securely
+const ENCRYPTION_KEY = 'vathavaran-secret-key-2024'; // Change this to your own secret key
 
 export const encryptEnv = (content) => {
-  return btoa(content); // Base64 encoding
+  try {
+    const encrypted = CryptoJS.AES.encrypt(content, ENCRYPTION_KEY).toString();
+    return encrypted;
+  } catch (error) {
+    console.error('Encryption error:', error);
+    throw new Error('Failed to encrypt environment variables');
+  }
 };
 
 export const decryptEnv = (encrypted) => {
-  return atob(encrypted); // Base64 decoding
+  try {
+    const decrypted = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
+    const originalText = decrypted.toString(CryptoJS.enc.Utf8);
+    
+    if (!originalText) {
+      throw new Error('Decryption failed - invalid key or corrupted data');
+    }
+    
+    return originalText;
+  } catch (error) {
+    console.error('Decryption error:', error);
+    throw new Error('Failed to decrypt environment variables');
+  }
 };
 
 // Validate env file format
