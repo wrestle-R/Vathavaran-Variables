@@ -716,6 +716,9 @@ async function handleEnvList(request, env, origin) {
       // Then fetch env files from all those repos
       
       try {
+        // Use a Set to store unique repo full names
+        const uniqueRepoNames = new Set();
+
         // Get user's repositories (owned)
         const reposResponse = await fetch('https://api.github.com/user/repos?type=owner&per_page=100', {
           headers: {
@@ -730,9 +733,9 @@ async function handleEnvList(request, env, origin) {
         }
 
         const userRepos = await reposResponse.json();
-        const repoFullNames = userRepos.map(r => r.full_name);
+        userRepos.forEach(r => uniqueRepoNames.add(r.full_name));
 
-        console.log(`Found ${repoFullNames.length} owned repositories for ${auth.user.login}`);
+        console.log(`Found ${userRepos.length} owned repositories for ${auth.user.login}`);
 
         // Get collaborated repositories (where user is a collaborator but not owner)
         const collaboratedResponse = await fetch('https://api.github.com/user/repos?type=collaborator&per_page=100', {
@@ -744,12 +747,14 @@ async function handleEnvList(request, env, origin) {
 
         if (collaboratedResponse.ok) {
           const collaboratedRepos = await collaboratedResponse.json();
-          const collaboratedNames = collaboratedRepos.map(r => r.full_name);
-          repoFullNames.push(...collaboratedNames);
-          console.log(`Found ${collaboratedNames.length} collaborated repositories for ${auth.user.login}`);
+          const beforeSize = uniqueRepoNames.size;
+          collaboratedRepos.forEach(r => uniqueRepoNames.add(r.full_name));
+          const addedCount = uniqueRepoNames.size - beforeSize;
+          console.log(`Found ${collaboratedRepos.length} collaborated repositories for ${auth.user.login} (${addedCount} new)`);
         }
 
-        console.log(`Total repositories to search: ${repoFullNames.length}`, repoFullNames);
+        const repoFullNames = Array.from(uniqueRepoNames);
+        console.log(`Total unique repositories to search: ${repoFullNames.length}`, repoFullNames);
 
         // Query Firestore for env files from all these repos
         // Firestore IN operator supports max 30 values, so we need to batch if more
