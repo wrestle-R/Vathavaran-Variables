@@ -169,7 +169,7 @@ const Repo = () => {
         dirFiles.includes('webpack.config.js')
       ) {
         category = 'frontend';
-        label = 'Frontend';
+        label = dir.name;
       }
       // Backend detection
       else if (
@@ -183,7 +183,7 @@ const Repo = () => {
         (dirFiles.includes('package.json') && dirFiles.includes('index.js'))
       ) {
         category = 'backend';
-        label = 'Backend';
+        label = dir.name;
       }
       // Database/Config detection
       else if (
@@ -194,7 +194,7 @@ const Repo = () => {
         dirName === 'configuration'
       ) {
         category = 'config';
-        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+        label = dir.name;
       }
       // Mobile app detection
       else if (
@@ -205,7 +205,7 @@ const Repo = () => {
         dirFiles.includes('build.gradle') // Android
       ) {
         category = 'mobile';
-        label = 'Mobile';
+        label = dir.name;
       }
       // Docs/Assets
       else if (
@@ -216,12 +216,12 @@ const Repo = () => {
         dirName === 'static'
       ) {
         category = 'other';
-        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+        label = dir.name;
       }
       // Default
       else {
         category = 'other';
-        label = dir.name.charAt(0).toUpperCase() + dir.name.slice(1);
+        label = dir.name;
       }
 
       detectedDirs.push({
@@ -272,11 +272,11 @@ const Repo = () => {
 
   const fetchEnvFiles = async () => {
     try {
-      console.log('🔍 Fetching env files with:', { userId: user.id, repoFullName: `${owner}/${repo}` });
+      console.log('🔍 Fetching env files with:', { repoFullName: `${owner}/${repo}` });
       
+      // Query by repoFullName only to get all collaborators' env files
       const q = query(
         collection(db, 'envFiles'),
-        where('userId', '==', user.id),
         where('repoFullName', '==', `${owner}/${repo}`)
       );
       
@@ -350,9 +350,15 @@ const Repo = () => {
       // Encrypt before storing
       const encryptedContent = encryptEnv(formattedContent);
       
-      // Generate env name from timestamp
-      const timestamp = new Date().toISOString().split('T')[0];
-      const envName = `.env.${timestamp}`;
+      // Generate env name with timestamp and username
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const username = user.login || 'Unknown';
+      const envName = `.env.${day}/${month}/${year}T${hours}:${minutes} (${username})`;
       
       const envData = {
         userId: user.id,
@@ -776,7 +782,7 @@ const Repo = () => {
                           )}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Updated {new Date(env.updatedAt).toLocaleDateString()}
+                          Updated {new Date(env.updatedAt).toLocaleDateString()} • By {env.userName || 'Unknown'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
