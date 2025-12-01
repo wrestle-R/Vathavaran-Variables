@@ -154,7 +154,7 @@ async function handleRequest(request, env) {
   }
 
   // Route: List env files
-  if (path === '/api/env/list' && request.method === 'GET') {
+  if (path === '/api/env/list' && request.method === 'POST') {
     return handleEnvList(request, env, origin);
   }
 
@@ -569,9 +569,9 @@ async function handleEnvPull(request, env, origin) {
 
     // Query Firebase Firestore for env files
     const projectId = env.FIREBASE_PROJECT_ID;
-    const userId = auth.user.id;
     
-    // Build structured query to filter by userId and repoFullName
+    // Build structured query to filter by repoFullName and directory only
+    // This allows all collaborators to access env files for the repository
     const structuredQuery = {
       structuredQuery: {
         from: [{ collectionId: 'envFiles' }],
@@ -579,13 +579,6 @@ async function handleEnvPull(request, env, origin) {
           compositeFilter: {
             op: 'AND',
             filters: [
-              {
-                fieldFilter: {
-                  field: { fieldPath: 'userId' },
-                  op: 'EQUAL',
-                  value: { integerValue: userId.toString() }
-                }
-              },
               {
                 fieldFilter: {
                   field: { fieldPath: 'repoFullName' },
@@ -667,47 +660,187 @@ async function handleEnvList(request, env, origin) {
   }
 
   try {
-    // Query Firebase Firestore for all env files for this user
+    // Parse optional request body
+    const body = await request.json().catch(() => ({}));
+    const { repoFullName } = body;
+    
+    // Query Firebase Firestore for env files
     const projectId = env.FIREBASE_PROJECT_ID;
     const userId = auth.user.id;
     
-    // Build structured query to filter by userId only
-    const structuredQuery = {
-      structuredQuery: {
-        from: [{ collectionId: 'envFiles' }],
-        where: {
-          fieldFilter: {
-            field: { fieldPath: 'userId' },
-            op: 'EQUAL',
-            value: { integerValue: userId.toString() }
+    let envFiles = [];
+
+    if (repoFullName) {
+      // If repo specified, show ALL files for that repo (including collaborators)
+      const structuredQuery = {
+        structuredQuery: {
+          from: [{ collectionId: 'envFiles' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'repoFullName' },
+              op: 'EQUAL',
+              value: { stringValue: repoFullName }
+            }
+          }
+        }
+      };
+
+      const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+      const queryResponse = await fetch(queryUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(structuredQuery)
+      });
+
+      if (!queryResponse.ok) {
+        const errorText = await queryResponse.text();
+        console.error(`Firestore query failed: ${queryResponse.status}`, errorText);
+        throw new Error(`Firestore query failed: ${queryResponse.status} ${errorText}`);
+      }
+
+      const results = await queryResponse.json();
+
+      // Parse query results
+      if (Array.isArray(results)) {
+        for (const result of results) {
+          if (result.document) {
+            const envFile = firestoreDocToObject(result.document);
+            if (envFile) {
+              envFiles.push(envFile);
+            }
           }
         }
       }
-    };
+    } else {
+      // If no repo specified, find ALL repos user has access to (owned + collaborated)
+      // Then fetch env files from all those repos
+      
+      try {
+        // Get user's repositories (owned)
+        const reposResponse = await fetch('https://api.github.com/user/repos?type=owner&per_page=100', {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`,
+            'User-Agent': 'Cloudflare-Worker',
+          },
+        });
 
-    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
-    const queryResponse = await fetch(queryUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(structuredQuery)
-    });
+        if (!reposResponse.ok) {
+          console.error('Failed to fetch user repos:', reposResponse.status);
+          throw new Error('Failed to fetch repositories');
+        }
 
-    if (!queryResponse.ok) {
-      const errorText = await queryResponse.text();
-      console.error(`Firestore query failed: ${queryResponse.status}`, errorText);
-      throw new Error(`Firestore query failed: ${queryResponse.status} ${errorText}`);
-    }
+        const userRepos = await reposResponse.json();
+        const repoFullNames = userRepos.map(r => r.full_name);
 
-    const results = await queryResponse.json();
-    const envFiles = [];
+        console.log(`Found ${repoFullNames.length} owned repositories for ${auth.user.login}`);
 
-    // Parse query results
-    if (Array.isArray(results)) {
-      for (const result of results) {
-        if (result.document) {
-          const envFile = firestoreDocToObject(result.document);
-          if (envFile) {
-            envFiles.push(envFile);
+        // Get collaborated repositories (where user is a collaborator but not owner)
+        const collaboratedResponse = await fetch('https://api.github.com/user/repos?type=collaborator&per_page=100', {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`,
+            'User-Agent': 'Cloudflare-Worker',
+          },
+        });
+
+        if (collaboratedResponse.ok) {
+          const collaboratedRepos = await collaboratedResponse.json();
+          const collaboratedNames = collaboratedRepos.map(r => r.full_name);
+          repoFullNames.push(...collaboratedNames);
+          console.log(`Found ${collaboratedNames.length} collaborated repositories for ${auth.user.login}`);
+        }
+
+        console.log(`Total repositories to search: ${repoFullNames.length}`, repoFullNames);
+
+        // Query Firestore for env files from all these repos
+        // Firestore IN operator supports max 30 values, so we need to batch if more
+        if (repoFullNames.length > 0) {
+          const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+          
+          // Batch repos into chunks of 30 (Firestore IN limit)
+          const batchSize = 30;
+          for (let i = 0; i < repoFullNames.length; i += batchSize) {
+            const batch = repoFullNames.slice(i, i + batchSize);
+            
+            const structuredQuery = {
+              structuredQuery: {
+                from: [{ collectionId: 'envFiles' }],
+                where: {
+                  fieldFilter: {
+                    field: { fieldPath: 'repoFullName' },
+                    op: 'IN',
+                    value: { 
+                      arrayValue: { 
+                        values: batch.map(name => ({ stringValue: name }))
+                      }
+                    }
+                  }
+                }
+              }
+            };
+
+            console.log(`Querying batch ${Math.floor(i/batchSize) + 1} with ${batch.length} repos`);
+
+            const queryResponse = await fetch(queryUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(structuredQuery)
+            });
+
+            if (!queryResponse.ok) {
+              const errorText = await queryResponse.text();
+              console.error(`Firestore query failed: ${queryResponse.status}`, errorText);
+              continue; // Try next batch instead of failing completely
+            }
+
+            const results = await queryResponse.json();
+
+            // Parse query results
+            if (Array.isArray(results)) {
+              for (const result of results) {
+                if (result.document) {
+                  const envFile = firestoreDocToObject(result.document);
+                  if (envFile) {
+                    envFiles.push(envFile);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (gitError) {
+        console.error('GitHub API error:', gitError.message);
+        // Fall back to returning just the user's files
+        const structuredQuery = {
+          structuredQuery: {
+            from: [{ collectionId: 'envFiles' }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: 'userId' },
+                op: 'EQUAL',
+                value: { integerValue: userId.toString() }
+              }
+            }
+          }
+        };
+
+        const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+        const queryResponse = await fetch(queryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(structuredQuery)
+        });
+
+        if (queryResponse.ok) {
+          const results = await queryResponse.json();
+          if (Array.isArray(results)) {
+            for (const result of results) {
+              if (result.document) {
+                const envFile = firestoreDocToObject(result.document);
+                if (envFile) {
+                  envFiles.push(envFile);
+                }
+              }
+            }
           }
         }
       }

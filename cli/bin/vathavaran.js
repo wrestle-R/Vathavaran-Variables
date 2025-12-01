@@ -43,6 +43,8 @@ program
 program
   .command('list')
   .description('List all your stored environment files')
+  .option('-o, --owner <owner>', 'Repository owner (filter by repo)')
+  .option('-r, --repo <repo>', 'Repository name (filter by repo)')
   .action(listEnv);
 
 program.parse();

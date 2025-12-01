@@ -248,8 +248,27 @@ export async function pullEnv(options) {
       // Decrypt content
       const decryptedContent = await decryptEnv(selectedFile.content);
       
-      // Save to file
-      const outputFile = options.output || selectedFile.envName;
+      // Determine output filename
+      let outputFile = options.output;
+      
+      if (!outputFile) {
+        // Sanitize the envName to create a valid filename
+        // Replace all invalid characters with underscores
+        const sanitizedName = selectedFile.envName
+          .replace(/[/\\:*?"<>|]/g, '_');  // Replace all invalid filename characters with underscores
+        
+        // Ask user for confirmation or custom output path
+        const { finalOutput } = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'finalOutput',
+            message: 'Output file name:',
+            default: sanitizedName || '.env'
+          }
+        ]);
+        outputFile = finalOutput;
+      }
+      
       writeFileSync(outputFile, decryptedContent);
 
       console.log(chalk.green(`✅ Environment variables saved to ${outputFile}`));
@@ -269,15 +288,36 @@ export async function listEnv(options) {
   }
 
   const auth = getAuth();
-  const spinner = ora('Fetching your environment files...').start();
+  
+  // Build request body based on options
+  const requestBody = {};
+  
+  // Allow filtering by repo if EITHER owner or repo is provided (try to auto-detect the other)
+  if (options.repo) {
+    const repoOwner = options.owner || auth.userName;  // Default to current user if not specified
+    requestBody.repoFullName = `${repoOwner}/${options.repo}`;
+  } else if (options.owner) {
+    // If only owner is provided, prompt for repo name
+    console.log(chalk.yellow('⚠️  Repository name is required when filtering by owner'));
+    console.log(chalk.gray('Usage: varte list -r REPO_NAME or varte list -o OWNER -r REPO_NAME\n'));
+    return;
+  }
+  
+  const messageText = requestBody.repoFullName 
+    ? `Fetching environment files for ${requestBody.repoFullName}...`
+    : 'Fetching your environment files...';
+  
+  const spinner = ora(messageText).start();
 
   try {
     // Call backend API
     const response = await fetch(`${BACKEND_URL}/api/env/list`, {
-      method: 'GET',
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${auth.token}`
-      }
+      },
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
@@ -294,23 +334,18 @@ export async function listEnv(options) {
 
     spinner.stop();
 
-    console.log(chalk.blue('\n📋 Your Environment Files:\n'));
+    const headerText = requestBody.repoFullName 
+      ? `\n📋 Environment Files for ${requestBody.repoFullName}:\n`
+      : '\n📋 All Environment Files (including collaborators):\n';
+    
+    console.log(chalk.blue(headerText));
 
-    // Group by repository
-    const grouped = data.envFiles.reduce((acc, file) => {
-      if (!acc[file.repoFullName]) {
-        acc[file.repoFullName] = [];
-      }
-      acc[file.repoFullName].push(file);
-      return acc;
-    }, {});
-
-    Object.entries(grouped).forEach(([repo, files]) => {
-      console.log(chalk.cyan(`\n📁 ${repo}`));
-      files.forEach(file => {
-        const dir = file.directory ? `/${file.directory}` : '/root';
-        console.log(`   ${chalk.gray('└─')} ${file.envName} ${chalk.gray(`(${dir})`)} - ${chalk.gray(new Date(file.updatedAt).toLocaleString())}`);
-      });
+    // Display as a flat list
+    data.envFiles.forEach((file, index) => {
+      const dir = file.directory ? `/${file.directory}` : '/root';
+      const author = file.userName ? chalk.magenta(`by ${file.userName}`) : '';
+      const repo = chalk.cyan(`${file.repoFullName}`);
+      console.log(`${index + 1}. ${file.envName} ${chalk.gray(`(${dir})`)} - ${repo} ${author} - ${chalk.gray(new Date(file.updatedAt).toLocaleString())}`);
     });
 
     console.log('\n');
