@@ -26,6 +26,7 @@ const Repo = () => {
   const [pendingEnvContent, setPendingEnvContent] = useState('');
   const [showValidationPopup, setShowValidationPopup] = useState(false);
   const [editingValidationErrors, setEditingValidationErrors] = useState([]);
+  const [decryptedContents, setDecryptedContents] = useState({});
 
   useEffect(() => {
     // Wait for user context to finish loading before checking authentication
@@ -291,9 +292,29 @@ const Repo = () => {
       
       console.log('✅ Set env files:', files.length);
       setEnvFiles(files);
+      
+      // Decrypt all files in background
+      decryptAllFiles(files);
     } catch (error) {
       console.error('❌ Error fetching env files:', error);
     }
+  };
+
+  const decryptAllFiles = async (files) => {
+    const decrypted = {};
+    for (const file of files) {
+      try {
+        if (file.isEncrypted && file.content) {
+          decrypted[file.id] = await decryptEnv(file.content);
+        } else {
+          decrypted[file.id] = file.content;
+        }
+      } catch (error) {
+        console.error(`Failed to decrypt ${file.id}:`, error);
+        decrypted[file.id] = '⚠️ Failed to decrypt. This file may have been encrypted with a different key.';
+      }
+    }
+    setDecryptedContents(decrypted);
   };
 
   const parseEnvContent = (content) => {
@@ -459,15 +480,15 @@ const Repo = () => {
     const env = envFiles.find(e => e.id === envId);
     if (!env) return;
     
-    // Decrypt content if it's encrypted
-    const content = env.isEncrypted ? await decryptEnv(env.content) : env.content;
+    // Get already decrypted content
+    const content = decryptedContents[envId] || env.content;
     navigator.clipboard.writeText(content);
     setCopied(envId);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const getDecryptedContent = async (env) => {
-    return env.isEncrypted ? await decryptEnv(env.content) : env.content;
+  const getDecryptedContent = (env) => {
+    return decryptedContents[env.id] || 'Decrypting...';
   };
 
   const filteredEnvFiles = envFiles.filter(env => env.directory === selectedDirectory);
