@@ -6,10 +6,26 @@ import { login, logout, pushEnv, pullEnv, listEnv } from '../src/commands.js';
 
 const program = new Command();
 
+// Read package version dynamically so CLI shows the published package version
+import { readFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let pkgVersion = '0.0.0';
+try {
+  const pkgPath = path.join(__dirname, '..', 'package.json');
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  pkgVersion = pkg.version || pkgVersion;
+} catch (e) {
+  // ignore - fallback version will be used
+}
+
 program
   .name('varte')
   .description('CLI tool to securely manage environment variables across your GitHub repositories')
-  .version('1.0.0');
+  .version(pkgVersion);
 
 program
   .command('login')
