@@ -148,6 +148,11 @@ async function handleRequest(request, env) {
     return handleEnvPull(request, env, origin);
   }
 
+  // Route: Get encryption key
+  if (path === '/api/encryption-key' && request.method === 'GET') {
+    return handleGetEncryptionKey(env, origin);
+  }
+
   // Route: List env files
   if (path === '/api/env/list' && request.method === 'GET') {
     return handleEnvList(request, env, origin);
@@ -725,6 +730,30 @@ async function handleEnvList(request, env, origin) {
       },
     });
   }
+}
+
+// Handler: Get encryption key (public endpoint - no auth needed)
+function handleGetEncryptionKey(env, origin) {
+  if (!env.ENCRYPTION_KEY) {
+    return new Response(JSON.stringify({ 
+      error: 'Encryption key not configured. Please set it using: wrangler secret put ENCRYPTION_KEY'
+    }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders(origin),
+      },
+    });
+  }
+  
+  return new Response(JSON.stringify({ 
+    encryptionKey: env.ENCRYPTION_KEY
+  }), {
+    headers: {
+      'Content-Type': 'application/json',
+      ...corsHeaders(origin),
+    },
+  });
 }
 
 export default {

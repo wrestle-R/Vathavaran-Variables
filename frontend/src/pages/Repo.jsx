@@ -348,7 +348,7 @@ const Repo = () => {
       const formattedContent = parseAndFormatEnv(pendingEnvContent);
       
       // Encrypt before storing
-      const encryptedContent = encryptEnv(formattedContent);
+      const encryptedContent = await encryptEnv(formattedContent);
       
       // Generate env name with timestamp and username
       const now = new Date();
@@ -400,7 +400,7 @@ const Repo = () => {
       }
 
       const formattedContent = parseAndFormatEnv(newContent);
-      const encryptedContent = encryptEnv(formattedContent);
+      const encryptedContent = await encryptEnv(formattedContent);
       const envRef = doc(db, 'envFiles', envId);
       
       await updateDoc(envRef, {
@@ -422,7 +422,7 @@ const Repo = () => {
   const handleConfirmEditWithErrors = async (envId, newContent) => {
     try {
       const formattedContent = parseAndFormatEnv(newContent);
-      const encryptedContent = encryptEnv(formattedContent);
+      const encryptedContent = await encryptEnv(formattedContent);
       const envRef = doc(db, 'envFiles', envId);
       
       await updateDoc(envRef, {
@@ -455,19 +455,19 @@ const Repo = () => {
     }
   };
 
-  const copyToClipboard = (envId) => {
+  const copyToClipboard = async (envId) => {
     const env = envFiles.find(e => e.id === envId);
     if (!env) return;
     
     // Decrypt content if it's encrypted
-    const content = env.isEncrypted ? decryptEnv(env.content) : env.content;
+    const content = env.isEncrypted ? await decryptEnv(env.content) : env.content;
     navigator.clipboard.writeText(content);
     setCopied(envId);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const getDecryptedContent = (env) => {
-    return env.isEncrypted ? decryptEnv(env.content) : env.content;
+  const getDecryptedContent = async (env) => {
+    return env.isEncrypted ? await decryptEnv(env.content) : env.content;
   };
 
   const filteredEnvFiles = envFiles.filter(env => env.directory === selectedDirectory);

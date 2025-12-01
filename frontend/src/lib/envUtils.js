@@ -1,12 +1,30 @@
 // Proper encryption using CryptoJS AES
 import CryptoJS from 'crypto-js';
 
-// Use a consistent encryption key - in production, this should be stored securely
-const ENCRYPTION_KEY = 'vathavaran-secret-key-2024'; // Change this to your own secret key
+// Cache for encryption key
+let cachedEncryptionKey = null;
 
-export const encryptEnv = (content) => {
+// Fetch encryption key from serverless API
+async function getEncryptionKey() {
+  if (cachedEncryptionKey) {
+    return cachedEncryptionKey;
+  }
+
   try {
-    const encrypted = CryptoJS.AES.encrypt(content, ENCRYPTION_KEY).toString();
+    const response = await fetch('https://my-worker.vidyoyo.workers.dev/api/encryption-key');
+    const data = await response.json();
+    cachedEncryptionKey = data.encryptionKey;
+    return cachedEncryptionKey;
+  } catch (error) {
+    console.error('Failed to fetch encryption key from API:', error);
+    throw new Error('Unable to retrieve encryption key. Please ensure the serverless worker is deployed.');
+  }
+}
+
+export const encryptEnv = async (content) => {
+  try {
+    const key = await getEncryptionKey();
+    const encrypted = CryptoJS.AES.encrypt(content, key).toString();
     return encrypted;
   } catch (error) {
     console.error('Encryption error:', error);
@@ -14,9 +32,10 @@ export const encryptEnv = (content) => {
   }
 };
 
-export const decryptEnv = (encrypted) => {
+export const decryptEnv = async (encrypted) => {
   try {
-    const decrypted = CryptoJS.AES.decrypt(encrypted, ENCRYPTION_KEY);
+    const key = await getEncryptionKey();
+    const decrypted = CryptoJS.AES.decrypt(encrypted, key);
     const originalText = decrypted.toString(CryptoJS.enc.Utf8);
     
     if (!originalText) {

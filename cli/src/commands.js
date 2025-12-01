@@ -110,7 +110,16 @@ export async function pushEnv(options) {
         type: 'input',
         name: 'envName',
         message: 'Environment file name:',
-        default: options.name || `.env.${new Date().toISOString().split('T')[0]}`
+        default: (() => {
+          const now = new Date();
+          const day = String(now.getDate()).padStart(2, '0');
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const year = now.getFullYear();
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const username = auth.userName || 'Unknown';
+          return options.name || `.env.${day}/${month}/${year}T${hours}:${minutes} (${username})`;
+        })()
       }
     ]);
 
@@ -119,7 +128,7 @@ export async function pushEnv(options) {
     
     try {
       // Encrypt the content
-      const encryptedContent = encryptEnv(envContent);
+      const encryptedContent = await encryptEnv(envContent);
       
       // Call backend API
       const response = await fetch(`${BACKEND_URL}/api/env/push`, {
@@ -237,7 +246,7 @@ export async function pullEnv(options) {
       ]);
 
       // Decrypt content
-      const decryptedContent = decryptEnv(selectedFile.content);
+      const decryptedContent = await decryptEnv(selectedFile.content);
       
       // Save to file
       const outputFile = options.output || selectedFile.envName;
