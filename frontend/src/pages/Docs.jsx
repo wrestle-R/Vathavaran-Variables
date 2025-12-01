@@ -23,7 +23,7 @@ const Docs = () => {
             if (line.startsWith('#')) {
               return <div key={i} className="text-muted-foreground">{line}</div>;
             }
-            if (line.startsWith('npm') || line.startsWith('vathavaran') || line.startsWith('git') || line.startsWith('cd')) {
+            if (line.startsWith('npm') || line.startsWith('varte') || line.startsWith('git') || line.startsWith('cd')) {
               const parts = line.split(' ');
               return (
                 <div key={i}>
@@ -112,7 +112,7 @@ const Docs = () => {
           <p className="text-muted-foreground mb-6">
             Install the CLI globally to access it from any directory.
           </p>
-          <CodeBlock code="npm install -g vathavaran" id="install" />
+          <CodeBlock code="npm install -g varte" id="install" />
         </motion.section>
 
         {/* Quick Start */}
@@ -136,7 +136,7 @@ const Docs = () => {
               </div>
               <div className="flex-1 pt-1">
                 <p className="font-medium text-foreground mb-3">Login with GitHub</p>
-                <CodeBlock code="vathavaran login" id="qs-1" />
+                <CodeBlock code="varte login" id="qs-1" />
               </div>
             </div>
             
@@ -146,7 +146,7 @@ const Docs = () => {
               </div>
               <div className="flex-1 pt-1">
                 <p className="font-medium text-foreground mb-3">Push your .env file</p>
-                <CodeBlock code="vathavaran push" id="qs-2" />
+                <CodeBlock code="varte push" id="qs-2" />
               </div>
             </div>
             
@@ -156,7 +156,7 @@ const Docs = () => {
               </div>
               <div className="flex-1 pt-1">
                 <p className="font-medium text-foreground mb-3">Pull from anywhere</p>
-                <CodeBlock code="vathavaran pull" id="qs-3" />
+                <CodeBlock code="varte pull" id="qs-3" />
               </div>
             </div>
           </div>
@@ -180,9 +180,9 @@ const Docs = () => {
             <CommandCard
               title="push"
               description="Encrypt and upload your environment variables to the cloud."
-              code={`vathavaran push
-vathavaran push -f .env.production
-vathavaran push --owner myorg --repo myapp`}
+              code={`varte push
+varte push -f .env.production
+varte push --owner myorg --repo myapp`}
               id="cmd-push"
               options={[
                 { flag: '-f, --file', desc: 'Path to env file (default: .env)' },
@@ -196,9 +196,9 @@ vathavaran push --owner myorg --repo myapp`}
             <CommandCard
               title="pull"
               description="Download and decrypt your environment variables."
-              code={`vathavaran pull
-vathavaran pull --output .env.local
-vathavaran pull -d backend`}
+              code={`varte pull
+varte pull --output .env.local
+varte pull -d backend`}
               id="cmd-pull"
               options={[
                 { flag: '-o, --owner', desc: 'Repository owner' },
@@ -211,14 +211,14 @@ vathavaran pull -d backend`}
             <CommandCard
               title="list"
               description="Display all stored environment files grouped by repository."
-              code="vathavaran list"
+              code="varte list"
               id="cmd-list"
             />
             
             <CommandCard
               title="logout"
               description="Remove stored credentials from your machine."
-              code="vathavaran logout"
+              code="varte logout"
               id="cmd-logout"
             />
           </div>
@@ -244,7 +244,7 @@ vathavaran pull -d backend`}
               <CodeBlock 
                 code={`git clone https://github.com/myorg/myapp.git
 cd myapp
-vathavaran pull
+varte pull
 npm install && npm start`}
                 id="ex-1"
               />
@@ -253,9 +253,9 @@ npm install && npm start`}
             <div>
               <h3 className="font-medium text-foreground mb-3">Multiple environments</h3>
               <CodeBlock 
-                code={`vathavaran push -f .env.production -n production
-vathavaran push -f .env.staging -n staging
-vathavaran push -f .env.dev -n development`}
+                code={`varte push -f .env.production -n production
+varte push -f .env.staging -n staging
+varte push -f .env.dev -n development`}
                 id="ex-2"
               />
             </div>
@@ -264,11 +264,11 @@ vathavaran push -f .env.dev -n development`}
               <h3 className="font-medium text-foreground mb-3">Monorepo workflow</h3>
               <CodeBlock 
                 code={`# Push each service's env
-vathavaran push -d backend
-vathavaran push -d frontend
+varte push -d backend
+varte push -d frontend
 
 # Pull specific service
-vathavaran pull -d backend`}
+varte pull -d backend`}
                 id="ex-3"
               />
             </div>

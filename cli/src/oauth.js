@@ -33,7 +33,7 @@ export async function githubOAuthLogin() {
       // Parse user data
       const userData = JSON.parse(decodeURIComponent(user));
       const authData = { 
-        userId: userData.id, 
+        userId: Number(userData.id), 
         userName: userData.login,
         token: decodeURIComponent(token)
       };
