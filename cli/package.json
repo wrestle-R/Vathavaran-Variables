@@ -1,6 +1,6 @@
 {
   "name": "varte",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI tool to securely manage environment variables across your GitHub repositories",
   "main": "bin/vathavaran.js",
   "type": "module",
