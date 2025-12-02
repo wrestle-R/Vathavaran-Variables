@@ -172,7 +172,6 @@ export async function pushEnv(options) {
     const repoFullName = `${answers.repoOwner}/${answers.repoName}`;
     const spinner = ora('Encrypting and pushing environment variables...').start();
     
-    try {
       // Encrypt the content
       const encryptedContent = await encryptEnv(envContent);
       
@@ -194,9 +193,10 @@ export async function pushEnv(options) {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        spinner.fail(chalk.red(data.error || 'Failed to push environment variables'));
+        const errMsg = data && data.error ? data.error : 'Failed to push environment variables';
+        spinner.fail(chalk.red(errMsg));
         if (response.status === 403) {
           console.log(chalk.yellow('\n⚠️  You must be the owner or have push access to this repository\n'));
         }
@@ -204,9 +204,6 @@ export async function pushEnv(options) {
       }
 
       spinner.succeed(chalk.green(`✅ Environment variables encrypted and pushed to ${repoFullName}`));
-    } catch (error) {
-      spinner.fail(chalk.red(`Failed: ${error.message}`));
-    }
   } catch (error) {
     console.log(chalk.red(`❌ Failed to push: ${error.message}`));
   }
@@ -344,20 +341,30 @@ export async function listEnv(options) {
   
   // Build request body based on options
   const requestBody = {};
-  
-  // Allow filtering by repo if EITHER owner or repo is provided (try to auto-detect the other)
+  // Determine target repository to filter by (priority: flags > git auto-detect)
+  let targetRepoFullName = null;
+
   if (options.repo) {
-    const repoOwner = options.owner || auth.userName;  // Default to current user if not specified
-    requestBody.repoFullName = `${repoOwner}/${options.repo}`;
+    const repoOwner = options.owner || auth.userName; // Default to current user if not specified
+    targetRepoFullName = `${repoOwner}/${options.repo}`;
+    requestBody.repoFullName = targetRepoFullName;
   } else if (options.owner) {
     // If only owner is provided, prompt for repo name
     console.log(chalk.yellow('⚠️  Repository name is required when filtering by owner'));
     console.log(chalk.gray('Usage: varte list -r REPO_NAME or varte list -o OWNER -r REPO_NAME\n'));
     return;
+  } else {
+    // Try to auto-detect from git when no flags provided
+    const gitOwner = getGitHubUsername();
+    const gitRepo = getGitRepoName();
+    if (gitOwner && gitRepo) {
+      targetRepoFullName = `${gitOwner}/${gitRepo}`;
+      requestBody.repoFullName = targetRepoFullName;
+    }
   }
-  
-  const messageText = requestBody.repoFullName 
-    ? `Fetching environment files for ${requestBody.repoFullName}...`
+
+  const messageText = targetRepoFullName
+    ? `Fetching environment files for ${targetRepoFullName}...`
     : 'Fetching your environment files...';
   
   const spinner = ora(messageText).start();
