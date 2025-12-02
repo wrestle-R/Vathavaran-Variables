@@ -1,16 +1,17 @@
 {
   "name": "varte",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "CLI tool to securely manage environment variables across your GitHub repositories",
   "main": "bin/vathavaran.js",
   "type": "module",
   "bin": {
-    "varte": "./bin/vathavaran.js"
+    "varte": "bin/vathavaran.js"
   },
   "files": [
     "bin",
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -42,7 +43,6 @@
     "express": "^5.1.0",
     "inquirer": "^9.3.8",
     "open": "^11.0.0",
-    "ora": "^8.2.0",
-    "varte": "^1.0.0"
+    "ora": "^8.2.0"
   }
 }

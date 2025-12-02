@@ -1,7 +1,8 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import ora from 'ora';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'fs';
+import path from 'path';
 import { execSync } from 'child_process';
 import { saveAuth, getAuth, clearAuth, isAuthenticated } from './auth.js';
 import { encryptEnv, decryptEnv } from './encryption.js';
@@ -29,6 +30,44 @@ function getGitRepoName() {
     return match ? match[1] : null;
   } catch (error) {
     return null;
+  }
+}
+
+// List top-level directories in the git repository root (or cwd)
+function listTopLevelDirs() {
+  // Helper: walk up directories looking for repo indicators
+  function findRepoRoot(startDir) {
+    let dir = startDir;
+    while (true) {
+      if (existsSync(path.join(dir, '.git')) || existsSync(path.join(dir, 'package.json'))) {
+        return dir;
+      }
+      const parent = path.dirname(dir);
+      if (!parent || parent === dir) break;
+      dir = parent;
+    }
+    return startDir;
+  }
+
+  // Try git to get top-level; otherwise walk up or fallback to cwd
+  try {
+    const repoRoot = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim();
+    const entries = readdirSync(repoRoot, { withFileTypes: true });
+    return entries
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
+      .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== '.git');
+  } catch (err) {
+    try {
+      const repoRoot = findRepoRoot(process.cwd());
+      const entries = readdirSync(repoRoot, { withFileTypes: true });
+      return entries
+        .filter(e => e.isDirectory())
+        .map(e => e.name)
+        .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== '.git');
+    } catch (e) {
+      return [];
+    }
   }
 }
 
@@ -87,6 +126,12 @@ export async function pushEnv(options) {
     const gitRepoName = getGitRepoName();
     
     // Get repository info
+    const availableDirs = listTopLevelDirs();
+    const dirChoices = [
+      { name: 'Repository root (/) — push to repository root', value: '' },
+      ...availableDirs.map(d => ({ name: d, value: d }))
+    ];
+
     const answers = await inquirer.prompt([
       {
         type: 'input',
@@ -101,9 +146,10 @@ export async function pushEnv(options) {
         default: options.repo || gitRepoName
       },
       {
-        type: 'input',
+        type: 'list',
         name: 'directory',
-        message: 'Directory path (leave empty for root):',
+        message: 'Select directory to push into (use arrow keys):',
+        choices: dirChoices,
         default: options.directory || ''
       },
       {
@@ -181,6 +227,12 @@ export async function pullEnv(options) {
     const gitRepoName = getGitRepoName();
     
     // Get repository info
+    const availableDirs = listTopLevelDirs();
+    const dirChoices = [
+      { name: 'Repository root (/) — pull from repository root', value: '' },
+      ...availableDirs.map(d => ({ name: d, value: d }))
+    ];
+
     const answers = await inquirer.prompt([
       {
         type: 'input',
@@ -195,9 +247,10 @@ export async function pullEnv(options) {
         default: options.repo || gitRepoName
       },
       {
-        type: 'input',
+        type: 'list',
         name: 'directory',
-        message: 'Directory path (leave empty for root):',
+        message: 'Select directory to pull from (use arrow keys):',
+        choices: dirChoices,
         default: options.directory || ''
       }
     ]);

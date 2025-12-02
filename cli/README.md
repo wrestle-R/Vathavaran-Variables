@@ -63,61 +63,126 @@ varte logout
 ```
 
 ## Commands
+# Varte CLI
 
-| Command | Description | Options |
-|---------|-------------|---------|
-| `varte login` | Login using GitHub OAuth | - |
-| `varte logout` | Logout from Varte | - |
-| `varte push` | Push encrypted env file to cloud | `--file`, `--owner`, `--repo`, `--directory`, `--name` |
-| `varte pull` | Pull and decrypt env file | `--owner`, `--repo`, `--directory`, `--output` |
-| `varte list` | List all stored env files | - |
+Varte is a lightweight command-line tool that securely encrypts, stores, and syncs environment
+variables across your GitHub repositories. Designed for developers and teams, Varte uses
+GitHub OAuth for authentication and performs local encryption so sensitive data never leaves
+your machine in plaintext.
 
-## Options
+## Key features
 
-### Push Command Options
+- Secure local encryption of `.env` files before upload
+- Push and pull environment files per repository and directory
+- GitHub OAuth authentication (CLI flow supported)
+- Interactive, keyboard-friendly prompts
 
-- `-f, --file <path>` - Path to env file (default: `.env`)
-- `-o, --owner <owner>` - Repository owner
-- `-r, --repo <repo>` - Repository name
-- `-d, --directory <directory>` - Directory path in repository
-- `-n, --name <name>` - Custom name for the env file
+## Installation
 
-### Pull Command Options
+Install the CLI globally to use it from any directory:
 
-- `-o, --owner <owner>` - Repository owner
-- `-r, --repo <repo>` - Repository name
-- `-d, --directory <directory>` - Directory path in repository
-- `--output <path>` - Output file path
+```bash
+npm install -g varte
+```
 
-## How It Works
+You can also test a local package tarball before publishing:
 
-1. **Authentication**: Uses GitHub OAuth for secure authentication
-2. **Encryption**: Your environment variables are encrypted locally before being sent
-3. **Storage**: Encrypted data is stored securely in the cloud
-4. **Sync**: Pull your encrypted env files on any machine after authentication
-5. **Decryption**: Files are decrypted locally when you pull them
+```bash
+npm pack
+npm install -g ./varte-1.0.0.tgz
+```
 
-## Security
+## Quick start
 
-- All environment variables are encrypted before leaving your machine
-- Encryption keys are derived from your authentication
-- Only you can decrypt your environment variables
-- No plain-text storage in the cloud
+1. Authenticate with GitHub:
 
-## Requirements
+```bash
+varte login
+```
 
-- Node.js >= 18.0.0
-- A GitHub account
+2. Encrypt and push an environment file:
+
+```bash
+varte push --file .env
+```
+
+3. Pull and decrypt an environment file:
+
+```bash
+varte pull
+```
+
+4. List stored environment files:
+
+```bash
+varte list
+```
+
+## Commands
+
+- `varte login` — Authenticate using GitHub OAuth (opens browser)
+- `varte logout` — Remove stored credentials from this machine
+- `varte push` — Encrypt and upload an environment file
+- `varte pull` — Download and decrypt an environment file
+- `varte list` — List environment files you own or have access to
+
+## Push / Pull options
+
+Common options for `push`:
+
+- `-f, --file <path>` — Path to env file (default: `.env`)
+- `-o, --owner <owner>` — Repository owner (defaults to current user)
+- `-r, --repo <repo>` — Repository name (auto-detected from git when possible)
+- `-d, --directory <directory>` — Top-level directory inside the repo (interactive selector provided)
+- `-n, --name <name>` — Custom name for the environment snapshot
+
+Common options for `pull`:
+
+- `-o, --owner <owner>` — Repository owner
+- `-r, --repo <repo>` — Repository name
+- `-d, --directory <directory>` — Top-level directory inside the repo (interactive selector provided)
+- `--output <path>` — Output path for the decrypted file
+
+## Security & privacy
+
+- Files are encrypted locally using a symmetric key derived from your session.
+- Only encrypted blobs are stored on the server. Varte does not store plaintext environment
+	variables.
+- Use a secure machine and protect your login credentials. If you lose access to your
+	authentication, encrypted blobs may not be recoverable.
+
+## Publishing & contributing
+
+If you plan to contribute or publish fixes:
+
+1. Fork the repo and create a feature branch
+2. Add tests for new behaviors
+3. Run linting/formatting (if configured)
+4. Open a pull request with a clear description
+
+Before publishing to `npm`, ensure `package.json` is correct: `name`, `version`, `bin`,
+`repository`, `license`, and `keywords`. Run a dry run before publishing:
+
+```bash
+npm pack
+npm publish --dry-run
+```
+
+If you publish a scoped package (for example `@your-scope/varte`), you may need to set
+the package access to public on publish:
+
+```bash
+npm publish --access public
+```
+
+## Support
+
+Report issues or feature requests on GitHub: https://github.com/wrestle-R/Vathavaran-Variables/issues
 
 ## License
 
-MIT
+MIT — see the `LICENSE` file in this repository.
 
-## Author
+## Maintainer
 
 wrestle-R
-
-## Links
-
-- [GitHub Repository](https://github.com/wrestle-R/Vathavaran-Variables)
-- [Report Issues](https://github.com/wrestle-R/Vathavaran-Variables/issues)
