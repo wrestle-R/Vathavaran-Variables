@@ -94,10 +94,13 @@ export function getEnvFiles(
   });
 }
 
-export function getEnvList(token: string): Promise<{ success: boolean; envFiles: EnvFile[] }> {
+export function getEnvList(
+  token: string,
+  repoFullName?: string
+): Promise<{ success: boolean; envFiles: EnvFile[] }> {
   return request<{ success: boolean; envFiles: EnvFile[] }>('/api/env/list', {
     method: 'POST',
     token,
-    body: JSON.stringify({}),
+    body: JSON.stringify(repoFullName ? { repoFullName } : {}),
   });
 }

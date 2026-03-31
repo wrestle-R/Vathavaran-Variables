@@ -2,7 +2,8 @@ import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
-import { useColorScheme } from 'react-native';
+
+import { useThemePreference } from '@/context/ThemePreferenceContext';
 
 export type AppColors = {
   background: string;
@@ -65,12 +66,14 @@ export const darkColors: AppColors = {
 };
 
 export function useAppTheme() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { effectiveScheme, isDark, preference, setPreference, toggleTheme } = useThemePreference();
 
   return {
-    colorScheme: isDark ? 'dark' : 'light',
+    colorScheme: effectiveScheme,
     isDark,
+    preference,
+    setPreference,
+    toggleTheme,
     colors: isDark ? darkColors : lightColors,
   };
 }

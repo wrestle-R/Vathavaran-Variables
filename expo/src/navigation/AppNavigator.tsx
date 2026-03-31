@@ -1,6 +1,8 @@
 import { NavigationContainer } from '@react-navigation/native';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
@@ -16,8 +18,14 @@ export type RepositoriesStackParamList = {
   RepositoryDetails: { repoFullName: string };
 };
 
+export type AppTabParamList = {
+  Dashboard: undefined;
+  Repos: NavigatorScreenParams<RepositoriesStackParamList>;
+  Profile: undefined;
+};
+
 const AuthStack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<AppTabParamList>();
 const RepositoriesStack = createNativeStackNavigator<RepositoriesStackParamList>();
 
 function RepositoriesStackScreen() {
@@ -47,7 +55,7 @@ function AppTabs() {
   return (
     <Tab.Navigator
       sceneContainerStyle={{ backgroundColor: colors.background }}
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerStyle: { backgroundColor: colors.card },
         headerTitleStyle: { color: colors.foreground },
         headerTintColor: colors.foreground,
@@ -57,7 +65,20 @@ function AppTabs() {
         },
         tabBarActiveTintColor: colors.foreground,
         tabBarInactiveTintColor: colors.mutedForeground,
-      }}>
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: 'grid' | 'grid-outline' | 'folder' | 'folder-outline' | 'person' | 'person-outline';
+
+          if (route.name === 'Dashboard') {
+            iconName = focused ? 'grid' : 'grid-outline';
+          } else if (route.name === 'Repos') {
+            iconName = focused ? 'folder' : 'folder-outline';
+          } else {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}>
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
       <Tab.Screen
         name="Repos"
