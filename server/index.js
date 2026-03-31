@@ -157,7 +157,9 @@ app.get('/api/user', async (req, res) => {
     const token = authHeader.replace('Bearer ', '');
     const userResponse = await axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'Vathavaran-Server',
       }
     });
 

@@ -315,8 +315,21 @@ async function handleGetUser(request, origin) {
     const userResponse = await fetch('https://api.github.com/user', {
       headers: {
         Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'Cloudflare-Worker',
       },
     });
+
+    if (!userResponse.ok) {
+      const errorText = await userResponse.text();
+      return new Response(JSON.stringify({ error: 'Invalid token', details: errorText }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders(origin),
+        },
+      });
+    }
 
     const userData = await userResponse.json();
 
