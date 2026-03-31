@@ -46,6 +46,19 @@ export function RepositoryDetailsScreen() {
     return list;
   }, [sortedFiles]);
 
+  const formatDirectoryLabel = useCallback((directory: string) => {
+    if (directory === '/') {
+      return 'Root';
+    }
+    const cleaned = directory.replace(/^\/+/, '').replace(/\/+/g, '/').trim();
+    if (!cleaned) {
+      return 'Root';
+    }
+    const parts = cleaned.split('/').filter(Boolean);
+    const lastPart = parts[parts.length - 1] || cleaned;
+    return lastPart;
+  }, []);
+
   const visibleFiles = useMemo(
     () => sortedFiles.filter((file) => (file.directory || '/') === selectedDirectory),
     [selectedDirectory, sortedFiles]
@@ -155,9 +168,9 @@ export function RepositoryDetailsScreen() {
       <Text style={styles.sectionTitle}>Folders</Text>
       <FlatList
         data={directories}
-        horizontal
+        numColumns={2}
         keyExtractor={(item) => item}
-        showsHorizontalScrollIndicator={false}
+        scrollEnabled={false}
         contentContainerStyle={styles.folderList}
         ListEmptyComponent={<Text style={styles.empty}>No folders found.</Text>}
         renderItem={({ item }) => (
@@ -169,12 +182,20 @@ export function RepositoryDetailsScreen() {
                 styles.folderChipText,
                 selectedDirectory === item && styles.folderChipTextActive,
               ]}>
+              {formatDirectoryLabel(item)}
+            </Text>
+            <Text
+              style={[
+                styles.folderSubText,
+                selectedDirectory === item && styles.folderSubTextActive,
+              ]}
+              numberOfLines={1}>
               {item}
             </Text>
           </Pressable>
         )}
       />
-      <Text style={styles.sectionTitle}>Env Files</Text>
+      <Text style={[styles.sectionTitle, styles.envSectionTitle]}>Env Files</Text>
       <FlatList
         data={visibleFiles}
         keyExtractor={(item) => item.id}
@@ -258,18 +279,27 @@ const createStyles = (colors: AppColors) =>
       marginBottom: 8,
       marginTop: 4,
     },
+    envSectionTitle: {
+      marginTop: 0,
+      marginBottom: 6,
+    },
     folderList: {
-      gap: 8,
-      paddingBottom: 8,
-      marginBottom: 10,
+      gap: 10,
+      marginBottom: 2,
     },
     folderChip: {
-      borderRadius: 999,
+      flex: 1,
+      minHeight: 76,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.card,
       paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingVertical: 10,
+      marginRight: 10,
+      marginBottom: 6,
+      justifyContent: 'center',
+      gap: 4,
     },
     folderChipActive: {
       backgroundColor: colors.primary,
@@ -278,10 +308,18 @@ const createStyles = (colors: AppColors) =>
     folderChipText: {
       color: colors.foreground,
       fontWeight: '600',
-      fontSize: 12,
+      fontSize: 13,
     },
     folderChipTextActive: {
       color: colors.primaryForeground,
+    },
+    folderSubText: {
+      color: colors.mutedForeground,
+      fontSize: 11,
+    },
+    folderSubTextActive: {
+      color: colors.primaryForeground,
+      opacity: 0.9,
     },
     fileItem: {
       borderWidth: 1,

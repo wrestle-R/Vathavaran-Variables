@@ -39,7 +39,11 @@ function RepositoriesStackScreen() {
         headerTintColor: colors.foreground,
         contentStyle: { backgroundColor: colors.background },
       }}>
-      <RepositoriesStack.Screen name="Repositories" component={RepositoriesScreen} />
+      <RepositoriesStack.Screen
+        name="Repositories"
+        component={RepositoriesScreen}
+        options={{ headerBackVisible: false, headerLeft: () => null }}
+      />
       <RepositoriesStack.Screen
         name="RepositoryDetails"
         component={RepositoryDetailsScreen}
@@ -79,13 +83,21 @@ function AppTabs() {
           return <Ionicons name={iconName} size={size || 22} color={color} />;
         },
       })}>
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ headerLeft: () => null }}
+      />
       <Tab.Screen
         name="Repos"
         component={RepositoriesStackScreen}
         options={{ headerShown: false }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerLeft: () => null }}
+      />
     </Tab.Navigator>
   );
 }
