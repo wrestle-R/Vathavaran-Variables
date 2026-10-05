@@ -95,3 +95,55 @@ func TestClientReportsFailureAndDoesNotFollowRedirects(t *testing.T) {
 		t.Fatal("followed redirect with token")
 	}
 }
+
+func TestPushEncryptsFileBeforeSendingAndHonorsExplicitFlags(t *testing.T) {
+	t.Setenv("VATHAVARAN_CONFIG_DIR", t.TempDir())
+	if err := SaveAuth(&Auth{UserID: 10, UserName: "owner", Token: "test-token"}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), ".env")
+	if err := os.WriteFile(path, []byte("PRIVATE_VALUE=fixture\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	received := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Error("missing bearer token")
+		}
+		switch r.URL.Path {
+		case "/api/encryption-key":
+			json.NewEncoder(w).Encode(map[string]string{"encryptionKey": "fixture-key"})
+		case "/api/env/push":
+			var payload map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+				t.Fatal(err)
+			}
+			if payload["repoFullName"] != "owner/repo" || payload["directory"] != "backend" || payload["envName"] != "production" {
+				t.Error("explicit flags were not preserved")
+			}
+			plaintext, err := Decrypt(payload["content"], "fixture-key")
+			if err != nil || string(plaintext) != "PRIVATE_VALUE=fixture\n" {
+				t.Error("wrong encrypted payload")
+			}
+			if strings.Contains(payload["content"], "PRIVATE_VALUE") {
+				t.Error("plaintext sent")
+			}
+			received = true
+			w.WriteHeader(201)
+			json.NewEncoder(w).Encode(map[string]bool{"success": true})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("VATHAVARAN_BACKEND_URL", server.URL)
+	var output bytes.Buffer
+	app := &App{In: bufio.NewReader(strings.NewReader("")), Out: &output, Err: &output, Interactive: true}
+	if err := app.Run([]string{"push", "-o", "owner", "-r", "repo", "-d", "backend", "-f", path, "-n", "production"}); err != nil {
+		t.Fatal(err)
+	}
+	if !received {
+		t.Fatal("no upload request received")
+	}
+}

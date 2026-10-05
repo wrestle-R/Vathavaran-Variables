@@ -31,7 +31,7 @@ Never put a token directly into shell command arguments.
 
 ## Learning and developing Go
 
-Install Go 1.23 or newer. There are no third-party Go dependencies.
+Install Go 1.23 or newer. The CLI uses Go’s standard library plus golang.org/x/term for reliable terminal detection.
 
 ```sh
 cd Go-cli

@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/term"
 )
 
 var Version = "2.0.0"
@@ -26,8 +28,7 @@ type App struct {
 }
 
 func NewApp() *App {
-	info, _ := os.Stdin.Stat()
-	return &App{In: bufio.NewReader(os.Stdin), Out: os.Stdout, Err: os.Stderr, Interactive: info != nil && info.Mode()&os.ModeCharDevice != 0}
+	return &App{In: bufio.NewReader(os.Stdin), Out: os.Stdout, Err: os.Stderr, Interactive: term.IsTerminal(int(os.Stdin.Fd()))}
 }
 func (app *App) prompt(label, fallback string) (string, error) {
 	if !app.Interactive {
@@ -198,12 +199,18 @@ func (app *App) Run(args []string) error {
 	if repo == "" && owner == gitOwner {
 		repo = gitRepo
 	}
+	specifiedFlags := map[string]bool{}
+	options.Visit(func(f *flag.Flag) { specifiedFlags[f.Name] = true })
 	if command != "list" {
-		if owner, err = app.prompt("Repository owner", owner); err != nil {
-			return err
+		if !specifiedFlags["owner"] && !specifiedFlags["o"] {
+			if owner, err = app.prompt("Repository owner", owner); err != nil {
+				return err
+			}
 		}
-		if repo, err = app.prompt("Repository name", repo); err != nil {
-			return err
+		if !specifiedFlags["repo"] && !specifiedFlags["r"] {
+			if repo, err = app.prompt("Repository name", repo); err != nil {
+				return err
+			}
 		}
 	}
 	if (owner == "") != (repo == "") {
@@ -240,7 +247,7 @@ func (app *App) Run(args []string) error {
 		if name == "" {
 			name = ".env." + time.Now().Format("02/01/2006T15:04") + " (" + auth.UserName + ")"
 		}
-		if app.Interactive {
+		if app.Interactive && !specifiedFlags["name"] && !specifiedFlags["n"] {
 			if name, err = app.prompt("Environment file name", name); err != nil {
 				return err
 			}
