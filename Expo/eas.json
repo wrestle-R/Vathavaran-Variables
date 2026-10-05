@@ -1,0 +1,14 @@
+{
+  "cli": { "version": ">= 16.0.0", "appVersionSource": "local" },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://vathavaran-variable.vercel.app",
+        "EXPO_PUBLIC_AUTH_CALLBACK_URL": "https://vathavaran-variable.vercel.app/api/auth/github/callback"
+      }
+    },
+    "production": { "autoIncrement": true }
+  }
+}

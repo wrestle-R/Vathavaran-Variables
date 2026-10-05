@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Vathavaran",
+    "slug": "vathavaran",
+    "scheme": "vathavaran",
+    "version": "2.0.0",
+    "backgroundColor": "#111413",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "plugins": ["expo-secure-store", "expo-web-browser", "expo-font"],
+    "orientation": "portrait",
+    "icon": "./assets/app-icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-dark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111413"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/splash-dark.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#111413"
+      }
+    },
+    "android": {
+      "backgroundColor": "#111413",
+      "splash": {
+        "image": "./assets/splash-dark.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#111413"
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#111413"
+      },
+      "package": "com.russeldp.vathavaran"
+    },
+    "owner": "russeldp",
+    "extra": {
+      "eas": {
+        "projectId": "d2d77f18-75bb-4f6e-b123-ed773aaeaec9"
+      }
+    }
+  }
+}
