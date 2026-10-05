@@ -139,7 +139,7 @@ async function handle(request: NextRequest) {
     const { token, user } = await authenticate(request);
     if (path === "/api/user" && request.method === "GET") return json(user);
     if (path === "/api/repositories" && request.method === "GET")
-      return json(await repositories(token));
+      return json(await repositories(token, user.id));
     if (path === "/api/encryption-key" && request.method === "GET")
       return json({ encryptionKey: required("ENCRYPTION_KEY") });
     if (
@@ -172,13 +172,19 @@ async function handle(request: NextRequest) {
           files = files.filter((file) => (file.directory ?? "") === directory);
         }
       } else {
-        const allowed = await repositories(token);
+        const allowed = await repositories(token, user.id);
         files = [];
         // Bounded batches avoid Firestore composite indexes and preserve legacy documents.
-        for (let index = 0; index < allowed.length; index += 30) {
-          const names = allowed
-            .slice(index, index + 30)
-            .map((repo) => repo.full_name);
+        const repositoryNames = [
+          ...new Set(
+            allowed.flatMap((repo) => [
+              repo.full_name,
+              ...(repo.storageNames ?? []),
+            ]),
+          ),
+        ];
+        for (let index = 0; index < repositoryNames.length; index += 30) {
+          const names = repositoryNames.slice(index, index + 30);
           const snapshot = await database()
             .collection("envFiles")
             .where("repoFullName", "in", names)

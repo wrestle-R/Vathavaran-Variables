@@ -8,7 +8,7 @@ import {
   randomBytes,
 } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import type { GitHubUser, Repository } from "./contracts";
+import { validRepository, type GitHubUser, type Repository } from "./contracts";
 
 export class ApiError extends Error {
   constructor(
@@ -170,9 +170,20 @@ export async function repositoryAccess(
     !value.permissions?.admin
   )
     throw new ApiError(403, "Repository access is required");
+  if (
+    !write &&
+    value.private !== true &&
+    !value.permissions?.push &&
+    !value.permissions?.admin
+  ) {
+    // Public source-code visibility does not grant access to its environment files.
+    const memberships = await repositories(token);
+    if (!memberships.some((entry) => entry.id === value.id))
+      throw new ApiError(403, "Repository membership is required");
+  }
   return value;
 }
-export async function repositories(token: string) {
+export async function repositories(token: string, userId?: number) {
   const output: Repository[] = [];
   for (let page = 1; page <= 100; page++) {
     const batch = await github<Repository[]>(
@@ -180,12 +191,60 @@ export async function repositories(token: string) {
       token,
     );
     output.push(...batch);
-    if (batch.length < 100) return output;
+    if (batch.length < 100) break;
+    if (page === 100)
+      throw new ApiError(
+        422,
+        "Too many repositories. Filter by a specific repository",
+      );
   }
-  throw new ApiError(
-    422,
-    "Too many repositories. Filter by a specific repository",
-  );
+  if (userId === undefined) return output;
+  // GitHub's repository index can omit a repository that direct access permits.
+  // Recover repositories from this user's saved files and recheck access first.
+  let names: string[];
+  try {
+    const snapshot = await database()
+      .collection("envFiles")
+      .where("userId", "==", userId)
+      .select("repoFullName")
+      .get();
+    names = [...new Set(snapshot.docs.map((doc) => doc.data().repoFullName))]
+      .filter(validRepository);
+  } catch (error) {
+    console.warn(
+      "Stored repository discovery unavailable",
+      error instanceof Error ? error.name : "UnknownError",
+    );
+    return output;
+  }
+  const indexed = new Set(output.map((repo) => repo.full_name));
+  const missing = names.filter((name) => !indexed.has(name));
+  for (let index = 0; index < missing.length; index += 4) {
+    const discovered = await Promise.all(
+      missing.slice(index, index + 4).map(async (name) => {
+        try {
+          return { repo: await repositoryAccess(name, token), storedName: name };
+        } catch (error) {
+          if (error instanceof ApiError && [403, 404].includes(error.status))
+            return null;
+          throw error;
+        }
+      }),
+    );
+    for (const item of discovered) {
+      if (!item) continue;
+      const existing = output.find((repo) => repo.full_name === item.repo.full_name);
+      const repo = existing ?? item.repo;
+      if (item.storedName !== repo.full_name)
+        repo.storageNames = [
+          ...new Set([...(repo.storageNames ?? []), item.storedName]),
+        ];
+      if (existing) continue;
+      output.push(repo);
+      indexed.add(repo.full_name);
+    }
+  }
+  return output;
 }
 export async function body(
   request: NextRequest,

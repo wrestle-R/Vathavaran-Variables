@@ -7,6 +7,7 @@ export type GitHubUser = {
   html_url: string;
 };
 export type Repository = {
+  storageNames?: string[];
   id: number;
   name: string;
   full_name: string;

@@ -50,7 +50,9 @@ function githubFixture(write: boolean, read = true) {
         return Response.json({ id: 10, login: "signed-in-user" });
       if (path === "/repos/owner/repo")
         return Response.json({
+          id: 1,
           full_name: "owner/repo",
+          private: true,
           permissions: { push: write, pull: read },
         });
       throw new Error(`Unexpected external request: ${path}`);
@@ -161,6 +163,80 @@ test("invalid upload and repository path input fail before database access", asy
     );
     assert.equal(get.status, 400);
     assert.equal(collectionMock.mock.callCount(), 0);
+  } finally {
+    fetchMock.mock.restore();
+    collectionMock.mock.restore();
+  }
+});
+
+test("repository discovery includes authorized saved repositories and preserves renamed storage paths", async () => {
+  const requested: string[] = [];
+  const fetchMock = mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const path = new URL(typeof input === "string" || input instanceof URL ? input : input.url).pathname;
+    requested.push(path);
+    if (path === "/user") return Response.json({ id: 10, login: "signed-in-user" });
+    if (path === "/user/repos") return Response.json([{ full_name: "owner/repo" }]);
+    if (path === "/repos/org/shared") return Response.json({ id: 2, full_name: "org/shared", private: true, permissions: { pull: true } });
+    if (path === "/repos/owner/old-name") return Response.json({ id: 1, full_name: "owner/repo", private: true, permissions: { pull: true } });
+    if (path === "/repos/revoked/project") return Response.json({}, { status: 404 });
+    throw new Error(`Unexpected external request: ${path}`);
+  });
+  const legacy = { ...document, repoFullName: "owner/old-name" };
+  const savedNames = ["org/shared", "org/shared", "owner/old-name", "revoked/project", "../invalid"];
+  const collectionMock = mock.method(db, "collection", () => ({
+    where: (field: string, operator: string, value: unknown) => {
+      if (field === "userId") {
+        assert.equal(operator, "==");
+        assert.equal(value, 10);
+        return { select: (selection: string) => {
+          assert.equal(selection, "repoFullName");
+          return { get: async () => ({ docs: savedNames.map(repoFullName => ({ data: () => ({ repoFullName }) })) }) };
+        } };
+      }
+      assert.equal(field, "repoFullName");
+      assert.equal(operator, "in");
+      assert.deepEqual(value, ["owner/repo", "owner/old-name", "org/shared"]);
+      return { get: async () => ({ docs: [{ id: "renamed-legacy-id", data: () => legacy }] }) };
+    },
+  }) as never);
+  try {
+    const response = await GET(request("/api/repositories"));
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), [
+      { full_name: "owner/repo", storageNames: ["owner/old-name"] },
+      { id: 2, full_name: "org/shared", private: true, permissions: { pull: true } },
+    ]);
+    assert.equal(requested.filter(path => path === "/repos/org/shared").length, 1);
+    const list = await POST(request("/api/env/list", {}));
+    assert.equal(list.status, 200);
+    assert.deepEqual((await list.json()).envFiles, [{ ...legacy, id: "renamed-legacy-id" }]);
+  } finally {
+    fetchMock.mock.restore();
+    collectionMock.mock.restore();
+  }
+});
+
+test("public repository visibility alone never exposes environment files", async () => {
+  let member = false;
+  const repo = { id: 99, full_name: "owner/public", private: false, permissions: { pull: true, push: false } };
+  const fetchMock = mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const path = new URL(typeof input === "string" || input instanceof URL ? input : input.url).pathname;
+    if (path === "/user") return Response.json({ id: 10, login: "signed-in-user" });
+    if (path === "/repos/owner/public") return Response.json(repo);
+    if (path === "/user/repos") return Response.json(member ? [repo] : []);
+    throw new Error(`Unexpected external request: ${path}`);
+  });
+  const collectionMock = mock.method(db, "collection", () => ({
+    where: () => ({ get: async () => ({ docs: [] }) }),
+  }) as never);
+  try {
+    const denied = await POST(request("/api/env/list", { repoFullName: "owner/public" }));
+    assert.equal(denied.status, 403);
+    assert.equal(collectionMock.mock.callCount(), 0);
+    member = true;
+    const allowed = await POST(request("/api/env/list", { repoFullName: "owner/public" }));
+    assert.equal(allowed.status, 200);
+    assert.equal(collectionMock.mock.callCount(), 1);
   } finally {
     fetchMock.mock.restore();
     collectionMock.mock.restore();
