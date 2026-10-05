@@ -1,0 +1,10 @@
+# Local planning, context, and credentials
+/Docs/
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+*.apk
+*.aab
