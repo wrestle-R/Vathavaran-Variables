@@ -864,7 +864,7 @@ export const documentation: DocPage[] = [
             ["404", "Repository unavailable or endpoint not found"],
             ["413", "JSON request is too large"],
             ["429", "GitHub rate limit or access restriction"],
-            ["503", "Required server configuration is missing"],
+            ["503", "Required server configuration is missing or invalid"],
           ],
         },
         code: [
@@ -961,6 +961,18 @@ export const documentation: DocPage[] = [
         note: {
           title: "A health check is not a database check",
           text: "GET /api/health confirms the app is running. Verify a real authenticated repository list and existing file read before treating the migration as complete.",
+        },
+      },
+      {
+        id: "firebase-key",
+        title: "Import the Firebase private key",
+        paragraphs: [
+          "FIREBASE_PRIVATE_KEY must contain the complete service-account PEM key, including its BEGIN PRIVATE KEY and END PRIVATE KEY lines. In the Vercel dashboard, paste the key with its original line breaks. When importing a .env file, use a quoted value with a single escaped \\n between lines. Do not add JSON escaping a second time.",
+          "The server supports multiline PEM, escaped newlines, and doubly escaped legacy imports. Invalid keys return a configuration error without exposing the credential. After updating any production variable, redeploy so the new value reaches the running server.",
+        ],
+        note: {
+          title: "Keep the original encryption passphrase",
+          text: "Correcting Firebase credential formatting does not require changing ENCRYPTION_KEY. Preserve that value so existing files remain readable.",
         },
       },
       {
@@ -1163,6 +1175,7 @@ export const documentation: DocPage[] = [
         paragraphs: [
           "Check the Vercel project’s Root Directory is Next and Node.js is 22+. Add all server environment variables and redeploy. FIREBASE_PRIVATE_KEY supports escaped newline sequences; the Firebase project must match the existing database.",
           "The public /api/health endpoint only checks service liveness. An authenticated file read is needed to verify credentials and database connectivity.",
+          "If the server reports an invalid FIREBASE_PRIVATE_KEY, reimport the complete PEM key from the service-account credential. Use real line breaks in a dashboard paste, or single escaped \\n sequences in a quoted .env value. Redeploy after saving the variable. An HTTP 500 from a database route needs its Vercel runtime log checked; do not treat it as an empty repository.",
         ],
       },
     ],

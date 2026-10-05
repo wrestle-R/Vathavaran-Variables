@@ -4,6 +4,7 @@ import {
   createCipheriv,
   createDecipheriv,
   createHash,
+  createPrivateKey,
   randomBytes,
 } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -22,6 +23,31 @@ export function required(name: string): string {
   if (!value) throw new ApiError(503, `Server configuration missing: ${name}`);
   return value;
 }
+export function firebasePrivateKey(value: string): string {
+  let key = value;
+  const quoted = value.trim();
+  if (
+    (quoted.startsWith('"') && quoted.endsWith('"')) ||
+    (quoted.startsWith("'") && quoted.endsWith("'"))
+  )
+    key = quoted.slice(1, -1);
+  // Dashboard pastes and .env imports can escape PEM line breaks differently.
+  key = key
+    .replace(/\\+r\\+n/g, "\n")
+    .replace(/\\+n/g, "\n")
+    .replace(/\\+\r?\n/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .trim();
+  try {
+    createPrivateKey(key);
+  } catch {
+    throw new ApiError(
+      503,
+      "Server configuration invalid: FIREBASE_PRIVATE_KEY. Import a complete PEM private key with line breaks",
+    );
+  }
+  return key;
+}
 export function database() {
   const app =
     getApps()[0] ??
@@ -29,7 +55,7 @@ export function database() {
       credential: cert({
         projectId: required("FIREBASE_PROJECT_ID"),
         clientEmail: required("FIREBASE_CLIENT_EMAIL"),
-        privateKey: required("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n"),
+        privateKey: firebasePrivateKey(required("FIREBASE_PRIVATE_KEY")),
       }),
     });
   // REST transport avoids unnecessary gRPC startup for the query/upload routes.
