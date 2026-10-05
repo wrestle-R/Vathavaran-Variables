@@ -1,0 +1,5 @@
+{
+  "passphrase": "fixture-passphrase",
+  "plaintext": "DATABASE_URL=postgres://localhost/test\nUNICODE=नमस्ते 🌿\n",
+  "encrypted": "U2FsdGVkX18BAgMEBQYHCB6/KCR2COJCry3cq0efixJP8PWseWzLYMpLD8/y4NqR1MyVyV1Cnpov/ZplNT/xLVh1t/cFT3CNQgYQZ7HHPkpafyxF5823IgZhODarV6vi"
+}

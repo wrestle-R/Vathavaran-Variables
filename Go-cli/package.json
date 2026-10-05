@@ -1,0 +1,11 @@
+{
+  "name": "varte",
+  "version": "2.0.0",
+  "description": "Native Go CLI for encrypted environment files across GitHub repositories",
+  "bin": { "varte": "npm/varte.cjs" },
+  "files": ["npm/varte.cjs", "bin/", "README.md"],
+  "scripts": { "build": "node scripts/build.cjs", "test": "go test ./...", "prepack": "npm run build" },
+  "engines": { "node": ">=18" },
+  "repository": { "type": "git", "url": "https://github.com/wrestle-R/Vathavaran-Variables.git", "directory": "Go-cli" },
+  "keywords": ["cli", "env", "secrets", "go", "github"]
+}
