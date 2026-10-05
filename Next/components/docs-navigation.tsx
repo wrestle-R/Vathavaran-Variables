@@ -38,10 +38,11 @@ export function DocsNavigation({
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+  const searchQuery = query.trim().toLowerCase();
   const results = entries.filter((entry) =>
     `${entry.title} ${entry.description} ${entry.headings.join(" ")} ${entry.searchText}`
       .toLowerCase()
-      .includes(query.toLowerCase()),
+      .includes(searchQuery),
   );
   return (
     <>
@@ -97,6 +98,7 @@ export function DocsNavigation({
       </aside>
       <dialog
         className="docs-search-dialog"
+        aria-label="Search the documentation"
         ref={dialog}
         onClick={(event) => {
           if (event.target === dialog.current) dialog.current?.close();
@@ -142,7 +144,10 @@ export function DocsNavigation({
           )}
         </div>
         <div className="search-dialog-footer">
-          Search page titles, summaries, and section headings.
+          <span role="status" aria-live="polite">
+            {results.length} {results.length === 1 ? "page" : "pages"}
+            {searchQuery ? " found" : " to explore"}
+          </span>
           <kbd>Esc to close</kbd>
         </div>
       </dialog>
