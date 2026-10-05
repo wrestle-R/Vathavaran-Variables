@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';

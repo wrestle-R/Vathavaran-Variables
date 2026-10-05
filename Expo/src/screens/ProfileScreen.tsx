@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Image, ScrollView, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '@/context/AuthContext';
 import { Button, Eyebrow, Touch, useStyles } from '@/components/ui';

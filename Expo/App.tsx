@@ -1,6 +1,8 @@
 import { useFonts } from 'expo-font';
-import { Manrope_600SemiBold, Manrope_700Bold } from '@expo-google-fonts/manrope';
-import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
+import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
+import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
+import { DMSans_400Regular } from '@expo-google-fonts/dm-sans/400Regular';
+import { DMSans_500Medium } from '@expo-google-fonts/dm-sans/500Medium';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 

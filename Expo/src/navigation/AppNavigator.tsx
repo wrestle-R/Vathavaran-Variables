@@ -2,7 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
