@@ -8,3 +8,6 @@ node_modules/
 dist/
 *.apk
 *.aab
+*.tsbuildinfo
+/Go-cli/bin/
+/Expo/.expo/
