@@ -4,15 +4,16 @@ The implementation is Go. npm ships the six prebuilt native binaries and a small
 launcher; users need Node for installation, but do not need Go or a compiler.
 
 ```sh
-npm install -g varte
+npm install -g varte@latest
 varte login
 varte push -f .env -d backend -n .env.production
 varte pull -d backend --output .env
 varte list --json
 ```
 
-The new release uses `https://vathavaran-variable.vercel.app` as its API server.
-Deploy Next before releasing this package. For development:
+Version 2.0.0 is published as the existing `varte` package. The install command
+also upgrades the JavaScript CLI and keeps its saved session available for import.
+The CLI uses `https://vathavaran-variable.vercel.app` as its API server. For development:
 
 ```sh
 export VATHAVARAN_BACKEND_URL=http://localhost:3000

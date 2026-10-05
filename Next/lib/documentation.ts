@@ -93,8 +93,8 @@ export const documentation: DocPage[] = [
           "Start with Installation, then follow the Quickstart. The CLI reference explains every option, while the web and mobile guides walk through their interfaces. Maintainers should read Deployment before changing server settings.",
         ],
         note: {
-          title: "About the new CLI release",
-          text: "The Go-based 2.0.0 package is prepared in this repository. Until that release is published to npm, installing varte from npm may still install the earlier JavaScript CLI. Use the local build instructions to try the Go implementation now.",
+          title: "Go CLI available on npm",
+          text: "Varte 2.0.0 is published under the existing varte package name. Install or upgrade with npm install -g varte@latest. The package includes native Go binaries, so users do not need a Go compiler.",
         },
       },
     ],
@@ -129,12 +129,12 @@ export const documentation: DocPage[] = [
         code: [
           {
             label: "npm",
-            value: "npm install -g varte\nvarte --version\nvarte --help",
+            value: "npm install -g varte@latest\nvarte --version\nvarte --help",
           },
         ],
         note: {
-          title: "Release availability",
-          text: "The commands above install the published npm version. Go-specific options in these docs require the 2.0.0 release. If it has not been published yet, use a repository build below.",
+          title: "Upgrading from the JavaScript CLI",
+          text: "The install command upgrades your existing varte installation to the Go release. Run varte --version to confirm 2.0.0 or newer. Existing commands, encrypted files, and saved JavaScript CLI sessions remain compatible. Source builds are optional.",
         },
       },
       {

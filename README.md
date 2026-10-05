@@ -56,15 +56,15 @@ Go 1.23+ is required to build. The npm package includes native binaries for Linu
 macOS, and Windows on x64 and arm64. End users do not need Go.
 
 ```sh
-npm install -g varte
+npm install -g varte@latest
 varte login
 varte push -f .env -d backend -n .env.production
 varte pull -d backend --output .env
 varte list --json
 ```
 
-The Go 2.0.0 release is prepared locally; npm installation uses the published
-version until the maintainer publishes this release. See [Go-cli/README.md](Go-cli/README.md)
+The Go 2.0.0 release is published as [varte on npm](https://www.npmjs.com/package/varte).
+The install command above also upgrades the original JavaScript package. See [Go-cli/README.md](Go-cli/README.md)
 for compatibility, configuration, beginner-friendly Go guidance, and release steps.
 The new CLI defaults to Next. Use `VATHAVARAN_BACKEND_URL=http://localhost:3000` to
 exercise a local server. Pull protects existing files; `--force` allows an intentional
@@ -86,6 +86,9 @@ eas build --profile preview --platform android
 The preview profile produces an APK for internal distribution and connects to the
 new Next URL. The app defaults to dark graphite and offers light/system themes.
 Native tokens use Expo SecureStore. Public Expo configuration contains URLs only.
+
+The Android preview is available as a [downloadable APK](https://expo.dev/artifacts/eas/k-OK0GGHhh5ieZAVBmlW_tqWIDgADnl30EbHG3yrxcM.apk).
+It is an internal preview; physical-device verification is still pending.
 
 ## Data compatibility
 
