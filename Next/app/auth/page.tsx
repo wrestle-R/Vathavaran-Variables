@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-html-link-for-pages -- OAuth requires a full navigation to establish the state cookie. */
 import { ArrowUpRight, Fingerprint, Github } from "lucide-react";
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Connect GitHub" };
@@ -25,10 +26,7 @@ export default function Auth() {
           <Github size={30} />
           <h2 style={{ marginTop: 24 }}>Welcome to Vathavaran.</h2>
           <p>One account for your terminal, browser, and phone.</p>
-          <a
-            className="button"
-            href={`${process.env.APP_URL || "http://localhost:3000"}/api/auth/github?browser=1`}
-          >
+          <a className="button" href="/api/auth/github?browser=1">
             Continue with GitHub <ArrowUpRight size={17} />
           </a>
           <p className="auth-note">

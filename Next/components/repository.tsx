@@ -47,8 +47,8 @@ export function RepositoryView({ name }: { name: string }) {
     }
   }, [name]);
   // Initial network fetch; state is the response, not derived render state.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
   async function reveal(file: EnvFile) {
@@ -303,7 +303,7 @@ export function RepositoryView({ name }: { name: string }) {
           <p>
             Upload your first file here, or use varte push from this repository.
           </p>
-          <Link href="/docs#push" className="button secondary">
+          <Link href="/docs/cli/push" className="button secondary">
             Read the push guide
           </Link>
         </div>

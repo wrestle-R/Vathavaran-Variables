@@ -44,8 +44,8 @@ export function Workspace() {
     }
   }, []);
   // Initial network fetch; state is the response, not derived render state.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
   const counts = useMemo(
@@ -181,7 +181,7 @@ export function Workspace() {
               <option value="files">With env files</option>
               <option value="private">Private repositories</option>
             </select>
-            <Link href="/docs#push" className="text-link">
+            <Link href="/docs/cli/push" className="text-link">
               Push from the CLI <ArrowRight size={14} />
             </Link>
           </div>
