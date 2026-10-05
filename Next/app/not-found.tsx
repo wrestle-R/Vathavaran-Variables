@@ -1,2 +1,17 @@
-import Link from 'next/link';
-export default function NotFound() { return <div className="page wrap"><div className="empty-state"><p className="eyebrow" style={{justifyContent:'center'}}>404 / page not found</p><h1 style={{fontSize:48,margin:'24px 0'}}>A little off course.</h1><p>This page doesn’t exist. Your workspace is a good place to start.</p><Link className="button" href="/dashboard">Go to workspace</Link></div></div>; }
+import Link from "next/link";
+export default function NotFound() {
+  return (
+    <div className="page wrap">
+      <div className="empty-state">
+        <p className="eyebrow" style={{ justifyContent: "center" }}>
+          404 / page not found
+        </p>
+        <h1 style={{ fontSize: 48, margin: "24px 0" }}>A little off course.</h1>
+        <p>This page doesn’t exist. Your workspace is a good place to start.</p>
+        <Link className="button" href="/dashboard">
+          Go to workspace
+        </Link>
+      </div>
+    </div>
+  );
+}
