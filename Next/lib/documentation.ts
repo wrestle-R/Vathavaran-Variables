@@ -1121,10 +1121,32 @@ export const documentation: DocPage[] = [
       {
         id: "callback",
         title: "GitHub callback mismatch",
+        steps: [
+          "Open GitHub Settings → Developer settings → OAuth Apps, then select your application.",
+          "Compare its Client ID with GITHUB_CLIENT_ID in Vercel Production. Select the matching application, even if another app has the same name.",
+          "Set its Homepage URL and Authorization callback URL to the production values below, then save the application settings.",
+          "If you intend to use a different OAuth app, update both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in Vercel with that app’s matching credentials and redeploy.",
+          "Open /auth on the production website and begin a fresh sign-in. Earlier authorization links contain a state value that can expire.",
+        ],
+        table: {
+          headers: ["Setting", "Production value"],
+          rows: [
+            ["Homepage URL / APP_URL", "https://vathavaran-variable.vercel.app"],
+            [
+              "Authorization callback URL / GITHUB_CALLBACK_URL",
+              "https://vathavaran-variable.vercel.app/api/auth/github/callback",
+            ],
+          ],
+        },
         paragraphs: [
+          "GitHub’s warning that the redirect_uri is not associated with the application means its OAuth registration does not accept the callback requested by the server. Register that callback in the OAuth app selected by the deployed Client ID.",
           "The GitHub OAuth app’s Authorization callback URL and the server’s GITHUB_CALLBACK_URL must point at the same deployment. APP_URL must identify that website. Updating an environment variable requires a new deployment to take effect.",
           "For this production project, use the singular hostname vathavaran-variable.vercel.app. The original website used the plural hostname, which is a different origin. Start a fresh sign-in after changing settings.",
         ],
+        note: {
+          title: "If the matching app is owned by someone else",
+          text: "Ask that app’s owner to update its registered callback, or configure an OAuth app you control and use its matching credentials in Vercel. The existing Firebase project and encryption passphrase remain the same.",
+        },
       },
       {
         id: "state",
