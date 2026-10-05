@@ -1,5 +1,5 @@
 import { cert, getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { initializeFirestore } from "firebase-admin/firestore";
 import {
   createCipheriv,
   createDecipheriv,
@@ -32,7 +32,8 @@ export function database() {
         privateKey: required("FIREBASE_PRIVATE_KEY").replace(/\\n/g, "\n"),
       }),
     });
-  return getFirestore(app);
+  // REST transport avoids unnecessary gRPC startup for the query/upload routes.
+  return initializeFirestore(app, { preferRest: true });
 }
 function sessionKey() {
   const secret = required("SESSION_SECRET");

@@ -215,7 +215,7 @@ export function Workspace() {
               </Link>
             ))}
           </div>
-          {!visible.length && (
+          {!visible.length && !error && (
             <div className="empty-state">
               <Search size={26} />
               <h2>{query ? "No repositories match." : "Nothing here yet."}</h2>

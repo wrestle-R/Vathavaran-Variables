@@ -150,6 +150,9 @@ export function RepositoryView({ name }: { name: string }) {
       {error && (
         <div className="error-message" role="alert">
           {error}
+          <button className="quiet" onClick={load}>
+            Retry
+          </button>
         </div>
       )}
       {success && (
@@ -296,7 +299,7 @@ export function RepositoryView({ name }: { name: string }) {
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : !error ? (
         <div className="empty-state">
           <FileKey2 size={32} />
           <h2>A fresh environment.</h2>
@@ -307,7 +310,7 @@ export function RepositoryView({ name }: { name: string }) {
             Read the push guide
           </Link>
         </div>
-      )}
+      ) : null}
       {active && (
         <section className="detail-panel" aria-label="Decrypted file">
           <header>

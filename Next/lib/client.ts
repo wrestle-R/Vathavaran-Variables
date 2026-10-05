@@ -8,17 +8,38 @@ export class ClientError extends Error {
   }
 }
 export async function api<T>(path: string, data?: object): Promise<T> {
-  const response = await fetch(path, {
-    method: data ? "POST" : "GET",
-    headers: data ? { "Content-Type": "application/json" } : undefined,
-    body: data ? JSON.stringify(data) : undefined,
-    cache: "no-store",
-    signal: AbortSignal.timeout(20000),
-  });
-  const result = await response.json();
-  if (!response.ok)
-    throw new ClientError(response.status, result.error || "Request failed");
-  return result;
+  try {
+    const response = await fetch(path, {
+      method: data ? "POST" : "GET",
+      headers: data ? { "Content-Type": "application/json" } : undefined,
+      body: data ? JSON.stringify(data) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(20000),
+    });
+    const result = await response.json().catch(() => {
+      throw new ClientError(
+        502,
+        "The server returned an unexpected response. Please retry",
+      );
+    });
+    if (!response.ok)
+      throw new ClientError(response.status, result.error || "Request failed");
+    return result;
+  } catch (error) {
+    if (error instanceof ClientError) throw error;
+    if (
+      error instanceof Error &&
+      ["TimeoutError", "AbortError"].includes(error.name)
+    )
+      throw new ClientError(
+        504,
+        "The server took too long to respond. Please retry",
+      );
+    throw new ClientError(
+      502,
+      "Could not reach the server. Check your connection and retry",
+    );
+  }
 }
 export function date(value: string) {
   const date = new Date(value);
