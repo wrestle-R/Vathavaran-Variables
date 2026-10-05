@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",
