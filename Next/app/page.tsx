@@ -11,6 +11,7 @@ import {
   FileKey2,
 } from "lucide-react";
 import { CopyButton } from "@/components/copy";
+import { CliBenchmark } from "@/components/cli-benchmark";
 export default function Home() {
   return (
     <>
@@ -137,6 +138,7 @@ export default function Home() {
           <Smartphone size={16} /> Terminal to pocket
         </span>
       </div>
+      <CliBenchmark />
       <section className="section wrap">
         <div className="section-heading">
           <p className="eyebrow">Less friction. More focus.</p>
@@ -185,8 +187,8 @@ export default function Home() {
               <Fingerprint className="feature-icon" size={25} />
               <h3>Your files stay encrypted.</h3>
               <p>
-                Content is encrypted on your device before it reaches the
-                database. Existing files keep their original encryption format.
+                Files are encrypted before upload and stay encrypted in storage.
+                Your GitHub access determines which files you can open.
               </p>
             </article>
             <article>
@@ -234,7 +236,7 @@ export default function Home() {
             <Smartphone size={23} />
             <div>
               <h3>On your phone</h3>
-              <p>Browse and access your environment files with Expo.</p>
+              <p>Find and copy your environment files wherever you are.</p>
             </div>
           </article>
         </div>

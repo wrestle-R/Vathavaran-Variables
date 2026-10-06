@@ -118,6 +118,17 @@ svg {
   width: min(1240px, calc(100% - 96px));
   margin: auto;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 .site-header {
   position: sticky;
   top: 0;
@@ -533,6 +544,148 @@ svg {
 .section {
   padding-top: 120px;
   padding-bottom: 20px;
+}
+.benchmark {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 64px;
+  align-items: start;
+}
+.benchmark-copy h2 {
+  margin-top: 24px;
+}
+.benchmark-description {
+  max-width: 350px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.85;
+}
+.benchmark-metrics {
+  display: flex;
+  gap: 38px;
+  margin: 35px 0 0;
+}
+.benchmark-metrics dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.benchmark-metrics dd {
+  margin: 8px 0;
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: clamp(32px, 3.3vw, 44px);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.benchmark-metrics dd span {
+  margin-left: 3px;
+  color: var(--muted);
+  font-size: 0.65em;
+}
+.benchmark-metrics small {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.benchmark-results {
+  min-width: 0;
+  padding-top: 5px;
+}
+.benchmark-results-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  border-bottom: 1px solid var(--line);
+}
+.benchmark-lower {
+  color: var(--accent);
+  white-space: nowrap;
+}
+.benchmark-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.benchmark-table th,
+.benchmark-table td {
+  padding: 20px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+}
+.benchmark-table th:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+.benchmark-table th:last-child,
+.benchmark-table td:last-child {
+  padding-right: 0;
+}
+.benchmark-table thead th {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+.benchmark-table th span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 9px;
+  font-weight: 400;
+}
+.benchmark-table tbody th {
+  font-weight: 400;
+}
+.benchmark-table td {
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.benchmark-table td span {
+  color: var(--muted);
+  font-size: 9px;
+}
+.benchmark-table .benchmark-current {
+  color: var(--accent);
+}
+.benchmark-context {
+  margin-top: 22px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.benchmark-method {
+  margin-top: 18px;
+  font-size: 11px;
+}
+.benchmark-method summary {
+  width: fit-content;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 2px;
+}
+.benchmark-method > div {
+  margin-top: 15px;
+  padding: 16px 18px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.85;
+}
+.benchmark-method p + p {
+  margin-top: 10px;
 }
 .section-heading {
   display: grid;
@@ -1152,6 +1305,13 @@ button:disabled {
   }
 }
 @media (max-width: 1050px) {
+  .benchmark {
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 32px;
+  }
+  .benchmark-metrics {
+    gap: 24px;
+  }
   .wrap,
   .site-footer {
     width: calc(100% - 56px);
@@ -1186,6 +1346,27 @@ button:disabled {
   }
 }
 @media (max-width: 760px) {
+  .benchmark {
+    grid-template-columns: 1fr;
+    gap: 38px;
+  }
+  .benchmark-table th,
+  .benchmark-table td {
+    padding: 18px 5px;
+    font-size: 10px;
+  }
+  .benchmark-table thead th {
+    font-size: 9px;
+  }
+  .benchmark-table td span {
+    font-size: 8px;
+  }
+  .benchmark-metrics dd {
+    font-size: 42px;
+  }
+  .benchmark-results-heading {
+    font-size: 8px;
+  }
   .header-inner {
     width: calc(100% - 36px);
     height: 70px;
