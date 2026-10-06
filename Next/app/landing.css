@@ -53,22 +53,30 @@ body:has(.launch) .site-footer { width: min(1120px, calc(100% - 80px)); }
 .launch-steps h3 { font-size: 19px; letter-spacing: -.025em; }
 .launch-steps p { font-size: 13px; line-height: 1.8; color: var(--muted); margin-top: 13px; max-width: 290px; }
 .launch-steps code { display: block; font-size: 10px; margin-top: 24px; color: var(--accent); }
-.launch-features { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
-.launch-security { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; position: relative; min-height: 560px; }
+.launch-features { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+.launch-security { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; position: relative; min-height: 560px; display: flex; flex-direction: column; }
 .launch-security-copy { position: relative; z-index: 1; padding: 35px; }
 .launch-security-copy > svg { color: var(--accent); margin-bottom: 24px; }
 .launch-security h2 { font-size: clamp(28px, 3vw, 39px); letter-spacing: -.045em; line-height: 1.15; }
 .launch-security p { max-width: 330px; color: var(--muted); font-size: 13px; margin-top: 15px; line-height: 1.8; }
-.launch-security img { display: block; width: 100%; height: 280px; object-fit: cover; object-position: center 45%; margin-top: -20px; mix-blend-mode: lighten; }
-[data-theme="light"] .launch-security img { mix-blend-mode: normal; }
-.launch-feature-stack { display: grid; gap: 20px; }
+.launch-security img { display: block; width: calc(100% - 48px); height: 280px; object-fit: contain; object-position: center; margin: auto auto 24px; mix-blend-mode: lighten; mask-image: linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent); }
+[data-theme="light"] .launch-security img {
+  /* Turn the black studio backdrop white, then blend it into the light card. */
+  filter: invert(1) hue-rotate(180deg) saturate(.65);
+  mix-blend-mode: multiply;
+}
+[data-theme="light"] .launch-security,
+[data-theme="light"] .launch-feature-stack article {
+  box-shadow: 0 4px 20px rgb(24 35 30 / 3%);
+}
+.launch-feature-stack { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 20px; min-width: 0; }
 .launch-feature-stack article { border: 1px solid var(--line); border-radius: 20px; padding: 35px; background: var(--surface); }
 .launch-feature-stack article:last-child { background: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
 .launch-feature-stack article > svg, .launch-device-icons { color: var(--accent); margin-bottom: 24px; }
 .launch-device-icons { display: flex; gap: 22px; }
 .launch-feature-stack h3 { font-size: 25px; letter-spacing: -.04em; line-height: 1.25; max-width: 320px; }
 .launch-feature-stack p { font-size: 13px; color: var(--muted); line-height: 1.8; margin-top: 14px; max-width: 330px; }
-.launch .benchmark { padding-block: 90px; --section-space: 0px; border-bottom: 1px solid var(--line); }
+.launch .benchmark { padding-block: 90px; --section-space: 0px; border-top: 0; border-bottom: 1px solid var(--line); }
 .launch .benchmark .eyebrow { display: none; }
 .launch .benchmark h2 { font-size: clamp(32px, 3.4vw, 44px); }
 .launch .benchmark-results { overflow-x: auto; }
