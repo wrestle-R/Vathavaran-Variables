@@ -4,6 +4,7 @@ export function CliBenchmark() {
   return (
     <section
       className="section benchmark wrap"
+      id="cli-performance"
       aria-labelledby="benchmark-title"
     >
       <div className="benchmark-copy">

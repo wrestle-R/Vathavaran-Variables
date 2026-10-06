@@ -2,25 +2,26 @@ import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
+  ArrowDown,
   Fingerprint,
   GitBranch,
   Smartphone,
   Terminal,
   Check,
   Folder,
-  FileKey2,
 } from "lucide-react";
 import { CopyButton } from "@/components/copy";
 import { CliBenchmark } from "@/components/cli-benchmark";
+import { HeroVisual } from "@/components/hero-visual";
 export default function Home() {
   return (
-    <>
-      <section className="hero wrap">
+    <div className="landing">
+      <section className="hero wrap" aria-labelledby="hero-title">
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="live-dot" /> A quieter way to manage secrets
           </div>
-          <h1>
+          <h1 id="hero-title">
             Your environment.
             <br />
             <span>Always in sync.</span>
@@ -47,102 +48,19 @@ export default function Home() {
             Built for developers. Connected to GitHub.
           </p>
         </div>
-        <div
-          className="workspace-preview"
-          aria-label="Example repository workspace"
-        >
-          <div className="window-top">
-            <span className="window-dots">
-              <i />
-              <i />
-              <i />
-            </span>
-            <span>Workspace / environment files</span>
-            <span className="preview-status">● Connected</span>
-          </div>
-          <div className="preview-body">
-            <div className="preview-nav">
-              <span className="mini-brand">v.</span>
-              <Folder size={19} />
-              <FileKey2 size={19} />
-              <Terminal size={19} />
-            </div>
-            <div className="preview-content">
-              <div className="preview-crumb">
-                acme / platform <span className="tag">Private</span>
-              </div>
-              <div className="preview-heading">
-                <h2>Everything in its place.</h2>
-                <GitBranch size={19} />
-              </div>
-              <p className="muted">Environment files / production</p>
-              <div className="preview-file">
-                <FileKey2 size={21} />
-                <div>
-                  <strong>.env.production</strong>
-                  <span>backend / uploaded by your team</span>
-                </div>
-                <span className="encrypted-label">
-                  <Fingerprint size={13} /> Encrypted
-                </span>
-              </div>
-              <div className="code-preview">
-                <div>
-                  <span>01</span>
-                  <b>DATABASE_URL</b>
-                  <i>=</i>
-                  <em>••••••••••••••••••••••••</em>
-                </div>
-                <div>
-                  <span>02</span>
-                  <b>GITHUB_CLIENT_ID</b>
-                  <i>=</i>
-                  <em>••••••••••••••</em>
-                </div>
-                <div>
-                  <span>03</span>
-                  <b>API_SECRET</b>
-                  <i>=</i>
-                  <em>••••••••••••••••••••</em>
-                </div>
-              </div>
-              <div className="preview-bottom">
-                <span>
-                  <Check size={14} /> Ready for your next pull
-                </span>
-                <span>3 variables</span>
-              </div>
-            </div>
-          </div>
-          <div className="terminal-overlay">
-            <div>
-              <Terminal size={14} /> varte / terminal
-            </div>
-            <code>
-              <span>$</span> varte pull -d backend
-            </code>
-            <p>
-              <Check size={14} /> Environment file saved to .env
-            </p>
-          </div>
-        </div>
+        <HeroVisual />
+        <a className="hero-scroll" href="#cli-performance">
+          <ArrowDown size={15} /> Explore the CLI
+        </a>
       </section>
-      <div className="principles wrap">
-        <span>
-          <Fingerprint size={16} /> Encrypted before upload
-        </span>
-        <span>
-          <GitBranch size={16} /> Built around your repositories
-        </span>
-        <span>
-          <Smartphone size={16} /> Terminal to pocket
-        </span>
-      </div>
       <CliBenchmark />
-      <section className="section wrap">
+      <section
+        className="section features wrap"
+        aria-labelledby="features-title"
+      >
         <div className="section-heading">
           <p className="eyebrow">Less friction. More focus.</p>
-          <h2>
+          <h2 id="features-title">
             Setup shouldn’t
             <br />
             slow your team down.
@@ -202,10 +120,13 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section className="section platforms wrap">
+      <section
+        className="section platforms wrap"
+        aria-labelledby="platforms-title"
+      >
         <div>
           <p className="eyebrow">One workspace. Three ways in.</p>
-          <h2>
+          <h2 id="platforms-title">
             Wherever work
             <br />
             finds you.
@@ -241,9 +162,9 @@ export default function Home() {
           </article>
         </div>
       </section>
-      <section className="cta wrap">
+      <section className="cta wrap" aria-labelledby="cta-title">
         <p className="eyebrow">Your next project starts here</p>
-        <h2>
+        <h2 id="cta-title">
           Keep your team
           <br />
           <span>in the same environment.</span>
@@ -253,6 +174,6 @@ export default function Home() {
         </Link>
         <p>No new account. Use the GitHub account you already have.</p>
       </section>
-    </>
+    </div>
   );
 }
