@@ -1,0 +1,108 @@
+/* Landing: soft panels at 16px, interactive controls at 8px. */
+.remake { --section-space: 100px; overflow: clip; }
+.remake .wrap { width: min(1240px, calc(100% - 96px)); }
+.remake-hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; min-height: 620px; padding-block: 42px; position: relative; }
+.remake-hero-copy { position: relative; z-index: 1; animation: enter .7s ease both; }
+.remake-eyebrow { display: flex; align-items: center; gap: 10px; color: var(--accent); font-family: var(--mono); font-size: 10px; letter-spacing: .12em; }
+.remake-hero h1 { font-size: clamp(58px, 6.5vw, 92px); font-weight: 750; letter-spacing: -.075em; line-height: 1.05; margin-block: 27px; }
+.remake h1 span, .remake-heading h2 span, .remake-security h2 span, .remake-cta h2 span { color: var(--accent); }
+.remake-description { max-width: 410px; font-size: 17px; color: var(--muted); line-height: 1.8; }
+.remake-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 32px; }
+.remake .button { border-radius: 8px; padding: 16px 21px; }
+.remake-art { margin: -30px -65px -30px -60px; min-width: 0; animation: enter 1s ease .1s both; }
+.remake-art img { display: block; width: 100%; height: auto; mix-blend-mode: lighten; }
+[data-theme="light"] .remake-art img { mix-blend-mode: normal; border-radius: 50%; }
+.remake-install { display: flex; align-items: center; justify-content: space-between; gap: 25px; border-block: 1px solid var(--line); padding-block: 26px; }
+.remake-install > div:first-child { display: flex; align-items: center; gap: 16px; color: var(--accent); }
+.remake-install > div:first-child span { font-size: 12px; line-height: 1.7; color: var(--muted); }
+.remake-install strong { color: var(--text); font-weight: 500; }
+.remake-install-command { display: flex; align-items: center; gap: 16px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 335px; font-size: 12px; }
+.remake-heading { max-width: 620px; margin-bottom: 52px; }
+.remake-heading h2, .remake-security h2, .remake-cta h2 { font-size: clamp(38px, 4.4vw, 62px); letter-spacing: -.06em; font-weight: 650; line-height: 1.1; }
+.remake-heading > p { color: var(--muted); max-width: 460px; margin-top: 23px; font-size: 15px; line-height: 1.8; }
+.remake-workflow, .remake-platforms { padding-block: 100px; }
+.remake-workflow-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 80px; align-items: center; }
+.remake-steps { display: grid; gap: 30px; }
+.remake-steps article { display: flex; gap: 25px; }
+.remake-step { font-family: var(--mono); font-size: 11px; color: var(--subtle); padding-top: 5px; }
+.remake-steps h3 { font-size: 21px; letter-spacing: -.035em; }
+.remake-steps p { color: var(--muted); font-size: 13px; margin-block: 9px 12px; max-width: 310px; }
+.remake-steps code { font-size: 11px; color: var(--accent); }
+.remake-terminal { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 70px #07100a20; transform: rotate(-2deg); transition: transform .3s; }
+.remake-terminal:hover { transform: rotate(0); }
+.remake-terminal-top { display: flex; align-items: center; gap: 10px; padding: 19px 23px; border-bottom: 1px solid var(--line); color: var(--muted); font-family: var(--mono); font-size: 10px; }
+.remake-terminal-top span:last-child { margin-left: auto; color: var(--subtle); }
+.remake-terminal-body { padding: 35px 28px 42px; font-family: var(--mono); font-size: 12px; }
+.remake-terminal-body p { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+.remake-terminal-body p > span:first-child { color: var(--accent); }
+.remake-terminal-body .terminal-comment { color: var(--subtle); margin-bottom: 30px; }
+.remake-terminal-body .terminal-success { color: var(--accent); font-size: 10px; margin-bottom: 30px; }
+.remake-terminal-bottom { display: flex; align-items: center; gap: 8px; padding: 15px 23px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+.remake-cursor { width: 7px; height: 15px; background: var(--accent); animation: terminal-cursor 1.5s step-end 4; }
+.remake-security { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: 55px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 70px; }
+.remake-security-intro > svg { color: var(--accent); margin-bottom: 30px; }
+.remake-security-intro h2 { font-size: clamp(35px, 3.5vw, 48px); margin-bottom: 25px; }
+.remake-security-details { display: grid; gap: 30px; }
+.remake-security-details article + article { border-top: 1px solid var(--line); padding-top: 30px; }
+.remake-security-details svg { color: var(--accent); margin-bottom: 15px; }
+.remake-security-details h3 { font-size: 20px; }
+.remake-security-details p { color: var(--muted); font-size: 13px; margin-top: 12px; line-height: 1.85; }
+.remake .benchmark { padding-block: 100px; border-bottom: 1px solid var(--line); margin-top: 0; }
+.remake .benchmark .eyebrow { display: none; }
+.remake .benchmark h2 { font-size: clamp(36px, 3.8vw, 52px); }
+.remake-platform-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.remake-platform { padding: 12px 32px 12px 0; display: flex; align-items: flex-start; flex-direction: column; }
+.remake-platform + .remake-platform { border-left: 1px solid var(--line); padding-left: 32px; }
+.remake-platform > svg { color: var(--accent); margin-bottom: 30px; }
+.remake-platform h3 { font-size: 23px; }
+.remake-platform p { color: var(--muted); font-size: 14px; margin-top: 14px; max-width: 280px; }
+.remake-platform > span { margin-top: 32px; display: flex; align-items: center; gap: 15px; font-size: 12px; }
+a.remake-platform:hover > span { color: var(--accent); }
+.remake-platform-note { color: var(--subtle); }
+.remake-cta { display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; gap: 50px; padding: 60px; border-radius: 16px; background: color-mix(in srgb, var(--accent) 6%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line)); margin-bottom: 85px !important; }
+.remake-cta > div > p:first-child { color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; margin-bottom: 22px; }
+.remake-cta-actions { justify-self: end; }
+.remake-cta-actions > p { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.8; }
+.site-header:has(+ main .remake) .header-inner { height: 76px; }
+@media (max-width: 1050px) {
+  .remake .wrap { width: calc(100% - 56px); }
+  .remake-hero { min-height: 560px; }
+  .remake-hero h1 { font-size: clamp(55px, 7vw, 76px); }
+  .remake-art { margin-inline: -25px; }
+  .remake-install { flex-wrap: wrap; }
+  .remake-install > a { display: none; }
+  .remake-workflow-grid { gap: 35px; }
+  .remake-security { padding: 35px; gap: 35px; }
+  .remake-cta { padding: 40px; }
+}
+@media (max-width: 760px) {
+  .remake .wrap { width: calc(100% - 40px); }
+  .site-header:has(+ main .remake) .header-inner { height: 70px; }
+  .remake-hero { grid-template-columns: 1fr; min-height: auto; padding-block: 46px 0; }
+  .remake-hero h1 { font-size: clamp(44px, 11.8vw, 82px); margin-block: 22px; }
+  .remake-description { font-size: 15px; max-width: 370px; }
+  .remake-eyebrow { font-size: 9px; }
+  .remake-actions { gap: 21px; margin-top: 25px; }
+  .remake .button { font-size: 12px; padding: 14px 17px; gap: 10px; }
+  .remake-art { width: min(480px, 100%); margin: -10px auto -20px; }
+  .remake-install { gap: 18px; padding-block: 24px; }
+  .remake-install-command { min-width: 0; width: 100%; font-size: 11px; gap: 11px; }
+  .remake-workflow, .remake-platforms { padding-block: 65px; }
+  .remake-heading { margin-bottom: 35px; }
+  .remake-heading h2, .remake-cta h2 { font-size: clamp(36px, 8vw, 52px); }
+  .remake-workflow-grid { grid-template-columns: 1fr; gap: 38px; }
+  .remake-terminal { transform: none; }
+  .remake-terminal-body { padding: 30px 20px; font-size: 11px; }
+  .remake-terminal-bottom { font-size: 9px; padding-inline: 18px; }
+  .remake-security { grid-template-columns: 1fr; padding: 28px; gap: 40px; }
+  .remake-security-intro h2 { font-size: 36px; }
+  .remake .benchmark { padding-block: 65px; }
+  .remake-platform-grid { grid-template-columns: 1fr; gap: 28px; }
+  .remake-platform { padding: 0 0 28px; }
+  .remake-platform + .remake-platform { border-left: 0; border-top: 1px solid var(--line); padding: 28px 0 0; }
+  .remake-platform > svg { margin-bottom: 18px; }
+  .remake-platform > span { margin-top: 20px; }
+  .remake-cta { grid-template-columns: 1fr; padding: 28px; gap: 30px; margin-bottom: 55px !important; }
+  .remake-cta-actions { justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .remake-terminal { transform: none; } }

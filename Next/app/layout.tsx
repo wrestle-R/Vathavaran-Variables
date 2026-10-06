@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Header, Footer } from "@/components/chrome";
 import "./globals.css";
+import "./landing.css";
 export const metadata: Metadata = {
   title: {
     default: "Vathavaran — Your environment, in sync",
