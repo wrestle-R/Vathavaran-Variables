@@ -242,3 +242,35 @@ test("public repository visibility alone never exposes environment files", async
     collectionMock.mock.restore();
   }
 });
+
+test("workspace authenticates and discovers repositories once, returning counts without file contents", async () => {
+  const paths: string[] = [];
+  const fetchMock = mock.method(globalThis, "fetch", async (input: string | URL | Request) => {
+    const url = new URL(typeof input === "string" || input instanceof URL ? input : input.url);
+    paths.push(url.pathname);
+    if (url.pathname === "/user") return Response.json({ id: 10, login: "signed-in-user" });
+    if (url.pathname === "/user/repos") return Response.json([{ id: 1, full_name: "owner/repo" }]);
+    throw new Error("Unexpected request");
+  });
+  const fields: string[][] = [];
+  const collectionMock = mock.method(db, "collection", () => ({
+    where: (_field: string, operation: string) => ({
+      select: (...selected: string[]) => {
+        fields.push(selected);
+        return { get: async () => ({ docs: operation === "in" ? [{ data: () => ({ repoFullName: "owner/repo" }) }] : [] }) };
+      },
+    }),
+  }) as never);
+  try {
+    const response = await GET(request("/api/workspace"));
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.deepEqual(result.counts, { "owner/repo": 1 });
+    assert.equal(result.envFiles, undefined);
+    assert.deepEqual(paths, ["/user", "/user/repos"]);
+    assert.deepEqual(fields, [["repoFullName"], ["repoFullName"]]);
+  } finally {
+    fetchMock.mock.restore();
+    collectionMock.mock.restore();
+  }
+});

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, Fragment } from "react";
 import {
   ArrowLeft,
   Download,
@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 import { api, ClientError, date, decrypt, safeFilename } from "@/lib/client";
 import type { EnvFile } from "@/lib/contracts";
+import { groupFilesByDirectory } from "@/lib/env-files";
 import { CopyButton } from "./copy";
 export function RepositoryView({ name }: { name: string }) {
   const [files, setFiles] = useState<EnvFile[]>([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [signedOut, setSignedOut] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [directory, setDirectory] = useState("*"),
     [active, setActive] = useState<EnvFile | null>(null),
     [plaintext, setPlaintext] = useState<string | null>(null),
@@ -105,6 +107,8 @@ export function RepositoryView({ name }: { name: string }) {
   const directories = Array.from(
     new Set(files.map((f) => f.directory || "")),
   ).sort();
+  const groups = groupFilesByDirectory(files);
+  const visibleGroups = groups.filter(group => directory === "*" || group.directory === directory);
   const visible = files.filter(
     (f) => directory === "*" || (f.directory || "") === directory,
   );
@@ -231,9 +235,10 @@ export function RepositoryView({ name }: { name: string }) {
         </section>
       )}
       <div className="section-label">
-        <h2>Environment files</h2>
-        <span>{visible.length} files</span>
+        <h2>Latest environment files</h2>
+        <span>{visibleGroups.length} directories · {visible.length} saved files</span>
       </div>
+      <p className="notice">The newest upload in each directory. Open history to see other files and older uploads.</p>
       <div className="toolbar">
         <select
           className="filter-select"
@@ -272,29 +277,44 @@ export function RepositoryView({ name }: { name: string }) {
               </tr>
             </thead>
             <tbody>
-              {visible.map((file) => (
-                <tr key={file.id}>
-                  <td>
-                    <span className="file-name">
-                      <FileKey2 size={19} />
-                      {file.envName}
-                    </span>
-                  </td>
-                  <td>{file.directory || "root /"}</td>
-                  <td>{file.userName}</td>
-                  <td>{date(file.updatedAt)}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        className="button secondary"
-                        onClick={() => reveal(file)}
-                        disabled={busy}
-                      >
-                        Open file
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+              {visibleGroups.map((group) => (
+                <Fragment key={group.directory}>
+                {[group.latest, ...(expanded.has(group.directory) ? group.history : [])].map((file, index) => (
+                    <tr key={file.id} className={index ? "history-row" : undefined}>
+                      <td>
+                        <span className="file-name">
+                          <FileKey2 size={19} />
+                          {file.envName}
+                          <span className="tag">{index ? "Previous" : "Latest"}</span>
+                        </span>
+                      </td>
+                      <td>{file.directory || "root /"}</td>
+                      <td>{file.userName}</td>
+                      <td>{date(file.updatedAt)}</td>
+                      <td>
+                        <div className="row-actions">
+                          <button
+                            className="button secondary"
+                            onClick={() => reveal(file)}
+                            disabled={busy}
+                          >
+                            Open file
+                          </button>
+                          {!index && group.history.length > 0 && (
+                            <button className="quiet" aria-expanded={expanded.has(group.directory)} onClick={() => setExpanded(current => {
+                              const next = new Set(current);
+                              if (next.has(group.directory)) next.delete(group.directory);
+                              else next.add(group.directory);
+                              return next;
+                            })}>
+                              {expanded.has(group.directory) ? "Hide history" : `History (${group.history.length})`}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                ))}
+                </Fragment>
               ))}
             </tbody>
           </table>

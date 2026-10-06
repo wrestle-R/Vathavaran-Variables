@@ -2402,3 +2402,14 @@ kbd {
     gap: 4px;
   }
 }
+
+.file-table .history-row {
+  background: var(--surface);
+  color: var(--muted);
+}
+.file-table .history-row .file-name {
+  padding-left: 1.5rem;
+}
+.file-table .file-name {
+  flex-wrap: wrap;
+}

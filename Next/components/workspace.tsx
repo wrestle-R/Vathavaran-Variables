@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -12,11 +12,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { api, ClientError } from "@/lib/client";
-import type { EnvFile, GitHubUser, Repository } from "@/lib/contracts";
+import type { GitHubUser, Repository } from "@/lib/contracts";
 export function Workspace() {
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [repos, setRepos] = useState<Repository[]>([]);
-  const [files, setFiles] = useState<EnvFile[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [signedOut, setSignedOut] = useState(false);
   const [error, setError] = useState("");
@@ -26,15 +26,11 @@ export function Workspace() {
     setLoading(true);
     setError("");
     try {
-      const currentUser = await api<GitHubUser>("/api/user");
-      setUser(currentUser);
+      const result = await api<{ user: GitHubUser; repositories: Repository[]; counts: Record<string, number> }>("/api/workspace");
+      setUser(result.user);
       setSignedOut(false);
-      const [repositories, envs] = await Promise.all([
-        api<Repository[]>("/api/repositories"),
-        api<{ envFiles: EnvFile[] }>("/api/env/list", {}),
-      ]);
-      setRepos(repositories);
-      setFiles(envs.envFiles);
+      setRepos(result.repositories);
+      setCounts(result.counts);
     } catch (e) {
       if (e instanceof ClientError && e.status === 401) setSignedOut(true);
       else
@@ -48,14 +44,6 @@ export function Workspace() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
-  const counts = useMemo(
-    () =>
-      files.reduce<Record<string, number>>((result, file) => {
-        result[file.repoFullName] = (result[file.repoFullName] || 0) + 1;
-        return result;
-      }, {}),
-    [files],
-  );
   const visible = repos.filter(
     (repo) =>
       repo.full_name.toLowerCase().includes(query.toLowerCase()) &&
@@ -108,7 +96,7 @@ export function Workspace() {
                 try {
                   await api("/api/auth/logout", {});
                   setUser(null);
-                  setFiles([]);
+                  setCounts({});
                   setRepos([]);
                   setSignedOut(true);
                 } catch (e) {
@@ -148,7 +136,7 @@ export function Workspace() {
               <div className="stat-label">
                 <FileKey2 size={14} /> Environment files
               </div>
-              <strong>{files.length}</strong>
+              <strong>{Object.values(counts).reduce((sum, count) => sum + count, 0)}</strong>
             </div>
             <div className="stat">
               <div className="stat-label">

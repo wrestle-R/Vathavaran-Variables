@@ -137,6 +137,23 @@ async function handle(request: NextRequest) {
       return response;
     }
     const { token, user } = await authenticate(request);
+    if (path === "/api/workspace" && request.method === "GET") {
+      const allowed = await repositories(token, user.id);
+      const names = [...new Set(allowed.flatMap(repo => [repo.full_name, ...(repo.storageNames ?? [])]))];
+      const counts: Record<string, number> = {};
+      // Only repository names are needed for the dashboard, never ciphertext.
+      for (let index = 0; index < names.length; index += 30) {
+        const snapshot = await database().collection("envFiles")
+          .where("repoFullName", "in", names.slice(index, index + 30))
+          .select("repoFullName").get();
+        for (const doc of snapshot.docs) {
+          const storedName = doc.data().repoFullName;
+          const repo = allowed.find(repo => repo.full_name === storedName || repo.storageNames?.includes(storedName));
+          if (repo) counts[repo.full_name] = (counts[repo.full_name] ?? 0) + 1;
+        }
+      }
+      return json({ user, repositories: allowed, counts });
+    }
     if (path === "/api/user" && request.method === "GET") return json(user);
     if (path === "/api/repositories" && request.method === "GET")
       return json(await repositories(token, user.id));
