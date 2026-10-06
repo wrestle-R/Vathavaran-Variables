@@ -1,7 +1,7 @@
 # Expo
 
 Vathavaran's mobile client. Defaults to the new Next API at
-https://vathavaran-variable.vercel.app with no Worker fallback.
+https://vathavaran-variable.vercel.app.
 
 ```sh
 npm ci

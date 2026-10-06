@@ -6,7 +6,7 @@ The native CLI is implemented in Go and distributed through npm.
 
 ```text
 Go-cli/   Native varte implementation and npm packaging
-Next/     Next.js website, documentation, GitHub OAuth, and Firestore API
+Next/     Next.js website, documentation, GitHub OAuth, and encrypted-file API
 Expo/     Expo / React Native application
 Docs/     Local context, plans, and verification artifacts (gitignored)
 ```
@@ -22,7 +22,7 @@ Use Node.js 22 or newer.
 cd Next
 npm ci
 cp .env.example .env.local
-# Fill in the existing Firebase, encryption, and GitHub credentials.
+# Fill in the existing server, encryption, and GitHub credentials.
 npm run dev
 ```
 
@@ -92,8 +92,8 @@ It is an internal preview; physical-device verification is still pending.
 
 ## Data compatibility
 
-The existing Firebase project, default Firestore database, and `envFiles` collection
-remain in use. Uploads append versions. The migration does not reset or rewrite
+Files are encrypted on your device before upload and stay encrypted in storage.
+Uploads append versions. The migration does not reset or rewrite
 existing document IDs, author fields, timestamps, directories, or ciphertext.
 
 The actual legacy encryption is CryptoJS's OpenSSL-compatible salted AES-256-CBC
@@ -104,9 +104,9 @@ while existing files depend on it.
 
 Next verifies GitHub repository permissions for reads and writes. The encryption-key
 route requires authentication. Web sessions use encrypted HTTP-only cookies;
-native clients use bearer tokens. The old Worker is no longer part of this codebase.
-Retire the externally deployed Worker only after the new server and clients are
-confirmed working, because older npm clients still default to that service.
+native clients use bearer tokens. Public repository visibility alone does not grant
+access to its environment files. Upgrade older clients with `npm install -g varte@latest`
+to connect to the current Next server.
 
 ## Deploy Next to Vercel
 
@@ -123,7 +123,7 @@ In the existing GitHub OAuth app:
 - Homepage URL: `https://vathavaran-variable.vercel.app`
 - Authorization callback URL: `https://vathavaran-variable.vercel.app/api/auth/github/callback`
 
-Redeploy after environment changes. `/api/health` is a liveness check, not a Firebase
+Redeploy after environment changes. `/api/health` is a liveness check, not a storage
 credential check. Verify an authenticated list, a legacy file read/decryption, and
 GitHub sign-in before publishing the CLI or relying on the mobile app.
 

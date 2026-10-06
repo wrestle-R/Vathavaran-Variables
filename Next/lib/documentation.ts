@@ -27,7 +27,7 @@ export const documentation: DocPage[] = [
         title: "One workspace, three ways in",
         paragraphs: [
           "Vathavaran stores encrypted versions of environment files, organized by repository and directory. A teammate can upload a configuration once, and collaborators with repository access can retrieve it from the CLI, website, or mobile app.",
-          "Use the Go CLI when working in a repository. Use the web workspace to browse, upload, decrypt, or download files. Use the Expo app to view and copy files on your phone. Each client connects to the same Next server and existing Firestore database.",
+          "Use the Go CLI when working in a repository. Use the web workspace to browse, upload, decrypt, or download files. Use the Expo app to view and copy files on your phone. Each client connects to the same workspace, with file contents encrypted before upload and kept encrypted in storage.",
         ],
         table: {
           headers: ["Client", "Best for"],
@@ -166,7 +166,7 @@ export const documentation: DocPage[] = [
           },
         ],
         paragraphs: [
-          "The Go CLI can read the original JavaScript CLI’s saved session when a new Go session does not exist. Commands and encrypted file format remain compatible. New releases point at the Next server instead of the old Worker.",
+          "The Go CLI can read the original JavaScript CLI’s saved session when a new Go session does not exist. Commands and encrypted file format remain compatible. The current release connects to https://vathavaran-variable.vercel.app.",
         ],
       },
     ],
@@ -328,7 +328,7 @@ export const documentation: DocPage[] = [
           },
         ],
         paragraphs: [
-          "Push reads the file as UTF-8, obtains the existing encryption passphrase through an authenticated request, encrypts content on the client, and sends ciphertext to Next. The server verifies GitHub write access and adds a Firestore document.",
+          "Push reads the file as UTF-8, obtains the existing encryption passphrase through an authenticated request, encrypts content on your device, and sends ciphertext to Next. The server verifies GitHub write access and saves a new encrypted version without replacing earlier uploads.",
         ],
       },
       {
@@ -641,8 +641,8 @@ export const documentation: DocPage[] = [
         id: "connection",
         title: "Connection and sessions",
         paragraphs: [
-          "The app uses https://vathavaran-variable.vercel.app as its server. There is no fallback to the old Worker. If the server is unavailable, retry after checking the connection. A temporary outage does not intentionally erase a saved valid session.",
-          "Changing EXPO_PUBLIC_BACKEND_URL requires a new app bundle/build. Only public URLs belong in Expo’s public environment variables; never include Firebase credentials or the encryption passphrase.",
+          "The app connects to https://vathavaran-variable.vercel.app. If the server is unavailable, retry after checking the connection. A temporary outage does not intentionally erase a saved valid session.",
+          "Changing EXPO_PUBLIC_BACKEND_URL requires a new app bundle/build. Only public URLs belong in Expo’s public environment variables; never include server credentials or the encryption passphrase.",
         ],
       },
     ],
@@ -692,19 +692,11 @@ export const documentation: DocPage[] = [
         id: "server",
         title: "Next server environment",
         table: {
-          headers: ["Variable", "Purpose"],
+          headers: ["Setting", "Purpose"],
           rows: [
             [
-              "FIREBASE_PROJECT_ID",
-              "Existing Firebase project; do not replace it",
-            ],
-            [
-              "FIREBASE_CLIENT_EMAIL",
-              "Existing Firebase service-account email",
-            ],
-            [
-              "FIREBASE_PRIVATE_KEY",
-              "Service-account private key; escaped newlines are supported",
+              "Storage credentials",
+              "Original server-only credentials listed in Next/.env.example; preserve access to existing encrypted versions",
             ],
             [
               "ENCRYPTION_KEY",
@@ -724,7 +716,7 @@ export const documentation: DocPage[] = [
           ],
         },
         paragraphs: [
-          "These values belong in Next/.env.local for local use or the hosting provider’s server environment settings. The repository includes a safe .env.example with names only. Neither .env.local nor Docs/ is tracked by Git.",
+          "These values belong in Next/.env.local for local use or the hosting provider’s server environment settings. Next/.env.example lists every required variable without credentials. Copy the storage variable names exactly from that template. Keep their values on the server and out of public client configuration. Neither .env.local nor Docs/ is tracked by Git.",
         ],
       },
       {
@@ -885,10 +877,10 @@ export const documentation: DocPage[] = [
     sections: [
       {
         id: "encryption",
-        title: "The existing encryption format",
+        title: "Encrypted before upload",
         paragraphs: [
-          "File content uses the CryptoJS OpenSSL-compatible passphrase format: Salted__ header, an 8-byte salt, AES-256-CBC encryption, and PKCS#7 padding. The legacy key and IV derivation uses MD5. The Go CLI reproduces this format so existing files can be read without a data conversion.",
-          "This is a compatibility format, not modern authenticated encryption. AES-CBC here does not provide an integrity tag. The service uses a shared server-managed passphrase available to authenticated clients, so it is not a zero-knowledge or per-repository-key vault.",
+          "Your file contents are encrypted on your device before upload and stay encrypted in storage. When you open or pull a file, the client decrypts it locally after the server verifies your GitHub repository access.",
+          "AES-256-CBC encryption preserves compatibility with existing files. This format has no integrity tag and uses a shared server-managed passphrase available to authenticated clients. The service does not provide zero-knowledge storage or separate keys for each repository.",
         ],
         note: {
           title: "Do not rotate the encryption passphrase casually",
@@ -897,7 +889,7 @@ export const documentation: DocPage[] = [
       },
       {
         id: "metadata",
-        title: "What the database stores",
+        title: "File content and metadata",
         table: {
           headers: ["Field", "Protection"],
           rows: [
@@ -908,15 +900,15 @@ export const documentation: DocPage[] = [
           ],
         },
         paragraphs: [
-          "Existing records remain in the same Firebase project, default database, and envFiles collection. The migration does not rewrite IDs, authors, timestamps, or ciphertext.",
+          "Existing encrypted versions remain intact. Each upload adds a new version; it does not rewrite earlier IDs, authors, timestamps, or ciphertext. Repository names, file names, directories, and attribution help you find and identify a version without decrypting its contents.",
         ],
       },
       {
         id: "access",
         title: "Repository authorization",
         paragraphs: [
-          "Reads require repository access reported by GitHub. Push requires push or admin permission. Authentication alone is insufficient to read a repository’s environment records. Unfiltered lists are assembled from repositories accessible to the current account.",
-          "The old Worker exposed its encryption-key endpoint anonymously and used weaker read authorization. The new endpoint requires authentication. Native clients must be updated to send bearer tokens for that request.",
+          "Reads require repository access reported by GitHub. Push requires push or admin permission. Authentication alone is insufficient to read a repository’s environment records. A public source repository does not make its environment files public: read access also requires verified repository membership.",
+          "Repository lists include accessible repositories and saved repository names whose access is verified again. This keeps saved files discoverable after a repository is renamed or omitted from the usual GitHub listing. File requests and encryption-key requests require authentication; native clients send bearer tokens.",
         ],
       },
       {
@@ -943,7 +935,7 @@ export const documentation: DocPage[] = [
           "Set the Vercel project Root Directory to Next.",
           "Choose Next.js and Node.js 22 or newer.",
           "Add the server environment variables from Next/.env.example.",
-          "Use the original Firebase project, service account, and encryption passphrase.",
+          "Keep the original storage credentials and encryption passphrase so existing versions remain readable.",
           "Generate a distinct SESSION_SECRET with at least 32 random characters.",
         ],
         code: [
@@ -964,15 +956,15 @@ export const documentation: DocPage[] = [
         },
       },
       {
-        id: "firebase-key",
-        title: "Import the Firebase private key",
+        id: "storage-key",
+        title: "Import the server private key",
         paragraphs: [
-          "FIREBASE_PRIVATE_KEY must contain the complete service-account PEM key, including its BEGIN PRIVATE KEY and END PRIVATE KEY lines. In the Vercel dashboard, paste the key with its original line breaks. When importing a .env file, use a quoted value with a single escaped \\n between lines. Do not add JSON escaping a second time.",
+          "Use the private-key variable named in Next/.env.example. It must contain the complete service-account PEM key, including its BEGIN PRIVATE KEY and END PRIVATE KEY lines. In the Vercel dashboard, paste the key with its original line breaks. When importing a .env file, use a quoted value with a single escaped \\n between lines. Do not add JSON escaping a second time.",
           "The server supports multiline PEM, escaped newlines, and doubly escaped legacy imports. Invalid keys return a configuration error without exposing the credential. After updating any production variable, redeploy so the new value reaches the running server.",
         ],
         note: {
           title: "Keep the original encryption passphrase",
-          text: "Correcting Firebase credential formatting does not require changing ENCRYPTION_KEY. Preserve that value so existing files remain readable.",
+          text: "Correcting server credential formatting does not require changing ENCRYPTION_KEY. Preserve that value so existing files remain readable.",
         },
       },
       {
@@ -1145,7 +1137,7 @@ export const documentation: DocPage[] = [
         ],
         note: {
           title: "If the matching app is owned by someone else",
-          text: "Ask that app’s owner to update its registered callback, or configure an OAuth app you control and use its matching credentials in Vercel. The existing Firebase project and encryption passphrase remain the same.",
+          text: "Ask that app’s owner to update its registered callback, or configure an OAuth app you control and use its matching credentials in Vercel. Keep the existing storage credentials and encryption passphrase unchanged.",
         },
       },
       {
@@ -1195,9 +1187,9 @@ export const documentation: DocPage[] = [
         id: "server",
         title: "Missing server configuration or empty production workspace",
         paragraphs: [
-          "Check the Vercel project’s Root Directory is Next and Node.js is 22+. Add all server environment variables and redeploy. FIREBASE_PRIVATE_KEY supports escaped newline sequences; the Firebase project must match the existing database.",
+          "Check the Vercel project’s Root Directory is Next and Node.js is 22+. Add every server variable listed in Next/.env.example and redeploy. The storage credentials must still point to your existing encrypted versions.",
           "The public /api/health endpoint only checks service liveness. An authenticated file read is needed to verify credentials and database connectivity.",
-          "If the server reports an invalid FIREBASE_PRIVATE_KEY, reimport the complete PEM key from the service-account credential. Use real line breaks in a dashboard paste, or single escaped \\n sequences in a quoted .env value. Redeploy after saving the variable. An HTTP 500 from a database route needs its Vercel runtime log checked; do not treat it as an empty repository.",
+          "If the server reports an invalid private key, check the variable named in the error against Next/.env.example and reimport the complete PEM key from the service-account credential. Use real line breaks in a dashboard paste, or single escaped \\n sequences in a quoted .env value. Redeploy after saving the variable. An HTTP 500 from a storage route needs its Vercel runtime log checked; do not treat it as an empty repository.",
         ],
       },
     ],
