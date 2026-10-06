@@ -1,15 +1,23 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronRight, Info } from "lucide-react";
-import { documentation, docHref } from "@/lib/documentation";
+import {
+  documentation,
+  docHref,
+  legacyDocDestination,
+} from "@/lib/documentation";
 import { DocsNavigation, OnThisPage } from "@/components/docs-navigation";
 import { DocsCode } from "@/components/docs-code";
 type Props = { params: Promise<{ slug?: string[] }> };
 export function generateStaticParams() {
-  return documentation.map((page) => ({
-    slug: page.slug ? page.slug.split("/") : [],
-  }));
+  return [
+    ...documentation.map((page) => ({
+      slug: page.slug ? page.slug.split("/") : [],
+    })),
+    { slug: ["deployment"] },
+    { slug: ["development"] },
+  ];
 }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -24,6 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DocumentationPage({ params }: Props) {
   const { slug } = await params;
   const path = (slug || []).join("/");
+  const destination = legacyDocDestination(path);
+  if (destination) permanentRedirect(destination);
   const index = documentation.findIndex((page) => page.slug === path);
   if (index < 0) notFound();
   const page = documentation[index];
@@ -35,7 +45,17 @@ export default async function DocumentationPage({ params }: Props) {
     description: page.description,
     group: page.group,
     headings: page.sections.map((section) => section.title),
-    searchText: page.sections.map(section => [...(section.paragraphs || []), ...(section.steps || []), ...(section.code?.map(code => code.value) || []), ...(section.table?.rows.flat() || []), section.note?.text || ""].join(" ")).join(" "),
+    searchText: page.sections
+      .map((section) =>
+        [
+          ...(section.paragraphs || []),
+          ...(section.steps || []),
+          ...(section.code?.map((code) => code.value) || []),
+          ...(section.table?.rows.flat() || []),
+          section.note?.text || "",
+        ].join(" "),
+      )
+      .join(" "),
   }));
   return (
     <div className="documentation-layout">
@@ -134,8 +154,7 @@ export default async function DocumentationPage({ params }: Props) {
           )}
         </nav>
         <p className="docs-endnote">
-          Vathavaran v2 · Documentation follows the current repository
-          implementation.
+          Vathavaran v2 · Guides for your terminal, browser, and phone.
         </p>
       </article>
       <OnThisPage

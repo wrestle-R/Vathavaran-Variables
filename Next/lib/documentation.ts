@@ -27,7 +27,7 @@ export const documentation: DocPage[] = [
         title: "One workspace, three ways in",
         paragraphs: [
           "Vathavaran stores encrypted versions of environment files, organized by repository and directory. A teammate can upload a configuration once, and collaborators with repository access can retrieve it from the CLI, website, or mobile app.",
-          "Use the Go CLI when working in a repository. Use the web workspace to browse, upload, decrypt, or download files. Use the Expo app to view and copy files on your phone. Each client connects to the same workspace, with file contents encrypted before upload and kept encrypted in storage.",
+          "Use the CLI to push and pull files while you work. Open the web workspace to browse, upload, or download a version. Use the mobile app to find and copy configuration when you are away from your desk.",
         ],
         table: {
           headers: ["Client", "Best for"],
@@ -40,7 +40,7 @@ export const documentation: DocPage[] = [
               "Web workspace",
               "Browsing repositories, inspecting versions, and uploading files",
             ],
-            ["Expo app", "Finding and copying environment files on Android"],
+            ["Mobile app", "Finding and copying environment files on Android"],
           ],
         },
       },
@@ -77,11 +77,7 @@ export const documentation: DocPage[] = [
             ],
             [
               "Version",
-              "A separate document created by each upload. Uploads do not replace earlier versions.",
-            ],
-            [
-              "Encryption passphrase",
-              "The server’s existing shared passphrase used by clients to preserve legacy ciphertext compatibility.",
+              "A saved snapshot created by an upload. Earlier versions remain available.",
             ],
           ],
         },
@@ -90,7 +86,7 @@ export const documentation: DocPage[] = [
         id: "next-steps",
         title: "Where to go next",
         paragraphs: [
-          "Start with Installation, then follow the Quickstart. The CLI reference explains every option, while the web and mobile guides walk through their interfaces. Maintainers should read Deployment before changing server settings.",
+          "Start with Installation, then follow the Quickstart. The CLI reference explains each command and option. The web and mobile guides show you how to find, upload, and open your files.",
         ],
         note: {
           title: "Go CLI available on npm",
@@ -104,7 +100,7 @@ export const documentation: DocPage[] = [
     group: "Get started",
     title: "Installation",
     description:
-      "Install varte through npm, or run the Go implementation directly from this repository.",
+      "Install or upgrade the native Go CLI through npm. You do not need a Go compiler.",
     sections: [
       {
         id: "requirements",
@@ -113,10 +109,9 @@ export const documentation: DocPage[] = [
           headers: ["Requirement", "Details"],
           rows: [
             ["GitHub account", "Access to the repository you want to use"],
-            ["Node.js 18+", "Required for the npm installer and launcher"],
+            ["Node.js 18+", "Required to install and run varte through npm"],
             ["Operating system", "Linux, macOS, or Windows on x64 or arm64"],
             ["Git", "Recommended for automatic repository detection"],
-            ["Go 1.23+", "Only needed to develop or build the CLI yourself"],
           ],
         },
       },
@@ -124,7 +119,7 @@ export const documentation: DocPage[] = [
         id: "npm",
         title: "Install from npm",
         paragraphs: [
-          "The npm package contains prebuilt Go binaries and a small launcher. Users do not need a Go compiler. The launcher selects the binary matching your operating system and CPU architecture.",
+          "Install the varte package for your platform. The package supports Linux, macOS, and Windows on x64 and arm64. You do not need to install Go or build anything yourself.",
         ],
         code: [
           {
@@ -134,27 +129,8 @@ export const documentation: DocPage[] = [
         ],
         note: {
           title: "Upgrading from the JavaScript CLI",
-          text: "The install command upgrades your existing varte installation to the Go release. Run varte --version to confirm 2.0.0 or newer. Existing commands, encrypted files, and saved JavaScript CLI sessions remain compatible. Source builds are optional.",
+          text: "This command upgrades an existing varte installation. Run varte --version to confirm 2.0.0 or newer. Your existing commands, saved files, and compatible sign-in session remain available.",
         },
-      },
-      {
-        id: "source",
-        title: "Run from source",
-        paragraphs: [
-          "Clone the repository and enter Go-cli. Go downloads the small terminal-support dependency automatically when you build.",
-        ],
-        code: [
-          {
-            label: "Terminal",
-            value:
-              "git clone https://github.com/wrestle-R/Vathavaran-Variables.git\ncd Vathavaran-Variables/Go-cli\ngo run ./cmd/varte --help\ngo build -o bin/varte ./cmd/varte\n./bin/varte login",
-          },
-          {
-            label: "PowerShell",
-            value:
-              "git clone https://github.com/wrestle-R/Vathavaran-Variables.git\ncd Vathavaran-Variables/Go-cli\ngo build -o bin/varte.exe ./cmd/varte\n.\\bin\\varte.exe --help",
-          },
-        ],
       },
       {
         id: "update",
@@ -166,7 +142,7 @@ export const documentation: DocPage[] = [
           },
         ],
         paragraphs: [
-          "The Go CLI can read the original JavaScript CLI’s saved session when a new Go session does not exist. Commands and encrypted file format remain compatible. The current release connects to https://vathavaran-variable.vercel.app.",
+          "Run the same install command to update an older installation. Check the version and connected account afterward. Existing encrypted files stay available.",
         ],
       },
     ],
@@ -181,9 +157,14 @@ export const documentation: DocPage[] = [
       {
         id: "start",
         title: "1. Connect your GitHub account",
-        code: [{ label: "Terminal", value: "varte login\nvarte status" }],
+        code: [
+          {
+            label: "Terminal",
+            value: "varte login\nvarte status",
+          },
+        ],
         paragraphs: [
-          "The login command opens GitHub in your browser. After authorization, the server returns your session to a temporary loopback listener on your device. The CLI verifies your identity and saves your session locally.",
+          "Run varte login, complete GitHub sign-in in your browser, and return to your terminal. Run varte status to confirm the connected account before uploading a file.",
         ],
       },
       {
@@ -256,9 +237,14 @@ export const documentation: DocPage[] = [
       {
         id: "login",
         title: "Browser login",
-        code: [{ label: "Terminal", value: "varte login" }],
+        code: [
+          {
+            label: "Terminal",
+            value: "varte login",
+          },
+        ],
         paragraphs: [
-          "The CLI binds a temporary HTTP listener to 127.0.0.1 on an available port. The Next server handles GitHub OAuth and redirects back to that listener. A random nonce protects the local callback; the server also binds OAuth state to a short-lived HTTP-only cookie.",
+          "Run varte login and finish GitHub sign-in in the browser that opens. Return to the terminal when sign-in completes.",
           "If the browser does not open automatically, copy the printed sign-in URL into your browser. The CLI waits up to five minutes. Restart login if it times out.",
         ],
       },
@@ -266,46 +252,47 @@ export const documentation: DocPage[] = [
         id: "token",
         title: "Use a token from an environment variable",
         code: [
-          { label: "Terminal", value: "varte login --token-env GITHUB_TOKEN" },
+          {
+            label: "Terminal",
+            value: "varte login --token-env GITHUB_TOKEN",
+          },
         ],
         paragraphs: [
-          "When GITHUB_TOKEN is already present in your environment, this verifies the token through the Next server and stores the resulting session. Use a token that can access your target repositories. Organization SSO settings may require additional authorization.",
+          "When GITHUB_TOKEN is already available in your environment, this command signs in using that token. It must have access to your target repositories. Organization SSO settings may require additional authorization.",
           "Avoid putting the token itself in command arguments or sharing it in chat. The --token-env option takes a variable name, not a secret value.",
         ],
       },
       {
         id: "status",
-        title: "Check the connected account and server",
-        code: [{ label: "Terminal", value: "varte status" }],
+        title: "Check the connected account",
+        code: [
+          {
+            label: "Terminal",
+            value: "varte status",
+          },
+        ],
         paragraphs: [
-          "Status asks the configured server to verify your token with GitHub. It prints the username and server URL, never the token. Expired or revoked sessions return an error and a nonzero exit code.",
+          "Status checks your connection and prints the connected username. If your sign-in has expired or been revoked, run varte login again.",
         ],
       },
       {
         id: "logout",
         title: "Sign out",
-        code: [{ label: "Terminal", value: "varte logout" }],
+        code: [
+          {
+            label: "Terminal",
+            value: "varte logout",
+          },
+        ],
         paragraphs: [
-          "Logout clears the Go CLI session and leaves a signed-out marker so the original JavaScript session is not restored accidentally. It does not revoke the OAuth app on GitHub or sign out other devices. Revoke the app in GitHub settings if you need to invalidate its access.",
+          "Logout signs out the CLI on this device. It does not sign out the website, mobile app, or other devices. You can also manage Vathavaran authorization in your GitHub account settings.",
         ],
       },
       {
-        id: "storage",
-        title: "Where sessions live",
-        table: {
-          headers: ["Platform", "Go CLI session"],
-          rows: [
-            [
-              "Linux",
-              "$XDG_CONFIG_HOME/varte/config.json or ~/.config/varte/config.json",
-            ],
-            ["macOS", "~/Library/Application Support/varte/config.json"],
-            ["Windows", "%AppData%/varte/config.json"],
-            ["Override", "$VATHAVARAN_CONFIG_DIR/config.json"],
-          ],
-        },
+        id: "devices",
+        title: "Shared devices",
         paragraphs: [
-          "The local session contains a bearer token and must be treated as a credential. The CLI uses owner-only permissions where available. This file is not an operating-system keychain.",
+          "Sign out when you finish using a shared computer. Keep local session files private and never include them in a repository, shared archive, or support message.",
         ],
       },
     ],
@@ -328,7 +315,7 @@ export const documentation: DocPage[] = [
           },
         ],
         paragraphs: [
-          "Push reads the file as UTF-8, obtains the existing encryption passphrase through an authenticated request, encrypts content on your device, and sends ciphertext to Next. The server verifies GitHub write access and saves a new encrypted version without replacing earlier uploads.",
+          "Push encrypts your local environment file before upload and adds a saved version to the selected repository and directory. You need GitHub write access. Earlier versions remain available.",
         ],
       },
       {
@@ -375,19 +362,19 @@ export const documentation: DocPage[] = [
         id: "versioning",
         title: "Every upload adds a version",
         paragraphs: [
-          "Uploads do not overwrite existing documents, even when the environment name is identical. Each record keeps its document ID, uploader, creation time, and update time. This preserves the original database behavior.",
-          "The local CLI file limit is 500 KB. The server caps JSON requests at 800 KB to allow encryption and encoding overhead.",
+          "Each upload creates a new saved version. Using the same file name again adds the latest configuration while keeping earlier versions available.",
+          "The local CLI file limit is 500 KB.",
         ],
         note: {
-          title: "Never upload plaintext through the API",
-          text: "POST /api/env/push expects the compatible encrypted content string. The web uploader and CLI encrypt before sending it.",
+          title: "Keep local secrets out of Git",
+          text: "Add real environment files to your project’s .gitignore. Share configuration through Vathavaran with the collaborators who need it.",
         },
       },
       {
         id: "permissions",
         title: "Required repository access",
         paragraphs: [
-          "GitHub must report push or admin permission for your account. A valid GitHub login alone does not grant write access to every repository. Check organization membership and SSO authorization if you receive an access error.",
+          "Uploading requires GitHub write access to the repository. Check your organization membership and SSO authorization if an upload is denied.",
         ],
       },
     ],
@@ -441,7 +428,7 @@ export const documentation: DocPage[] = [
           },
         ],
         paragraphs: [
-          "Noninteractive runs do not guess among multiple versions. Provide --name when needed. When duplicate versions have the same name, the newest matching version is selected because the server returns files newest first. Use the interactive chooser to select an older version.",
+          "For a script, provide --name to select a saved file and --output to set its destination. If multiple versions use that name, the newest matching version is selected. Use the interactive chooser when you need an older version.",
         ],
       },
       {
@@ -510,7 +497,7 @@ export const documentation: DocPage[] = [
         title: "Reading the result",
         paragraphs: [
           "The text output includes the environment name, full repository name, directory, uploader, and update timestamp. Files are sorted newest first. An empty result is successful and prints “No environment files found.”",
-          "--json returns the environment record array for scripting. This array includes encrypted content; handle the output as private repository data. It does not print the encryption passphrase.",
+          "--json returns structured file information for scripts. It includes encrypted file content, so treat the output as private repository data and keep it out of public logs.",
         ],
         code: [
           {
@@ -547,17 +534,17 @@ export const documentation: DocPage[] = [
         steps: [
           "Open the website and choose Connect GitHub.",
           "Review the GitHub authorization request and continue.",
-          "You return to the workspace with an encrypted HTTP-only session cookie.",
+          "Return to your workspace and open a repository.",
         ],
         paragraphs: [
-          "The browser session lasts up to seven days, subject to GitHub token validity. Signing out clears the website cookie; it does not sign out the CLI or mobile app.",
+          "Your sign-in can remain active for up to seven days. If access expires, connect GitHub again. Signing out of the website does not sign out the CLI or mobile app.",
         ],
       },
       {
         id: "repositories",
         title: "Find a repository",
         paragraphs: [
-          "The workspace lists repositories returned by GitHub for your account. Search by owner or name, filter to private repositories, or show only repositories with environment files. Summary counts reflect the returned records, not a simulated activity feed.",
+          "Search your workspace by repository owner or name. Filter to private repositories or show only repositories with saved environment files. File counts reflect the versions available to your account.",
         ],
       },
       {
@@ -607,7 +594,7 @@ export const documentation: DocPage[] = [
         id: "install",
         title: "Install a preview build",
         paragraphs: [
-          "The Expo preview profile produces an Android APK for internal distribution. Open the EAS build link supplied by the maintainer, download the APK, and allow installation from that source if Android prompts. This is a preview build, not a Play Store release.",
+          "Download and install the Android preview APK linked from this project’s README. You may need to allow installation from that download source in Android settings.",
         ],
       },
       {
@@ -616,10 +603,10 @@ export const documentation: DocPage[] = [
         steps: [
           "Open Vathavaran and choose Continue with GitHub.",
           "Complete authorization in the browser.",
-          "Return to the app through the vathavaran://auth/callback link.",
+          "Return to the app after sign-in completes.",
         ],
         paragraphs: [
-          "If browser login is unavailable, expand Use a personal access token and sign in with an appropriately authorized GitHub token. Native tokens are saved in Expo SecureStore.",
+          "If browser sign-in is unavailable, expand Use a personal access token and enter a GitHub token with access to the repositories you need. Keep that token private.",
         ],
       },
       {
@@ -641,8 +628,7 @@ export const documentation: DocPage[] = [
         id: "connection",
         title: "Connection and sessions",
         paragraphs: [
-          "The app connects to https://vathavaran-variable.vercel.app. If the server is unavailable, retry after checking the connection. A temporary outage does not intentionally erase a saved valid session.",
-          "Changing EXPO_PUBLIC_BACKEND_URL requires a new app bundle/build. Only public URLs belong in Expo’s public environment variables; never include server credentials or the encryption passphrase.",
+          "The mobile app connects to the same workspace as the website and CLI. If a request fails, check your connection and try again. A temporary connection failure does not intentionally sign you out.",
         ],
       },
     ],
@@ -650,90 +636,42 @@ export const documentation: DocPage[] = [
   {
     slug: "configuration",
     group: "Reference",
-    title: "Configuration",
+    title: "Preferences",
     description:
-      "Set the server URL and session location without changing your existing database or encrypted data.",
+      "Choose your theme, check your CLI version, and manage sign-in across devices.",
     sections: [
       {
         id: "cli",
-        title: "CLI environment variables",
-        table: {
-          headers: ["Variable", "Default", "Purpose"],
-          rows: [
-            [
-              "VATHAVARAN_BACKEND_URL",
-              "https://vathavaran-variable.vercel.app",
-              "Next API origin",
-            ],
-            [
-              "VATHAVARAN_CONFIG_DIR",
-              "OS-specific varte directory",
-              "Local session storage override",
-            ],
-          ],
-        },
+        title: "CLI version and account",
         code: [
           {
-            label: "Bash / zsh",
-            value:
-              "export VATHAVARAN_BACKEND_URL=http://localhost:3000\nvarte status",
-          },
-          {
-            label: "PowerShell",
-            value:
-              '$env:VATHAVARAN_BACKEND_URL = "http://localhost:3000"\nvarte status',
+            label: "Terminal",
+            value: "varte --version\nvarte status\nnpm install -g varte@latest",
           },
         ],
         paragraphs: [
-          "Remote servers must use HTTPS. HTTP is permitted only for localhost, 127.0.0.1, and ::1 during development. The CLI refuses redirects for authenticated API calls to avoid forwarding credentials unexpectedly.",
+          "Check your installed version and connected account before using a new device. The install command updates an existing installation.",
         ],
       },
       {
-        id: "server",
-        title: "Next server environment",
-        table: {
-          headers: ["Setting", "Purpose"],
-          rows: [
-            [
-              "Storage credentials",
-              "Original server-only credentials listed in Next/.env.example; preserve access to existing encrypted versions",
-            ],
-            [
-              "ENCRYPTION_KEY",
-              "Original shared passphrase needed by existing ciphertext",
-            ],
-            ["GITHUB_CLIENT_ID", "OAuth app client ID"],
-            ["GITHUB_CLIENT_SECRET", "OAuth app client secret"],
-            ["GITHUB_CALLBACK_URL", "Exact Next OAuth callback URL"],
-            [
-              "APP_URL",
-              "Canonical website origin used for callbacks and request-origin checks",
-            ],
-            [
-              "SESSION_SECRET",
-              "Random secret of at least 32 characters for encrypted session cookies",
-            ],
-          ],
-        },
+        id: "web",
+        title: "Website appearance",
         paragraphs: [
-          "These values belong in Next/.env.local for local use or the hosting provider’s server environment settings. Next/.env.example lists every required variable without credentials. Copy the storage variable names exactly from that template. Keep their values on the server and out of public client configuration. Neither .env.local nor Docs/ is tracked by Git.",
+          "The website opens in dark mode by default. Use the theme button in the header to switch to light mode. Your preference is remembered on that browser.",
         ],
       },
       {
-        id: "expo",
-        title: "Expo public configuration",
-        table: {
-          headers: ["Variable", "Purpose"],
-          rows: [
-            [
-              "EXPO_PUBLIC_BACKEND_URL",
-              "Next API URL compiled into the application",
-            ],
-            ["EXPO_PUBLIC_AUTH_CALLBACK_URL", "Next OAuth callback URL"],
-          ],
-        },
+        id: "mobile",
+        title: "Mobile appearance",
         paragraphs: [
-          "The preview build profile already sets the production Next URLs. These variables are public and must never contain credentials.",
+          "Open Account settings to choose dark, light, or system appearance. Dark is the default for a fresh installation. Your preference survives app restarts.",
+        ],
+      },
+      {
+        id: "sessions",
+        title: "Manage connected devices",
+        paragraphs: [
+          "The website, CLI, and mobile app have independent sign-ins. Sign out of each client separately when leaving a shared device. For wider access changes, review your GitHub account settings.",
         ],
       },
     ],
@@ -741,129 +679,60 @@ export const documentation: DocPage[] = [
   {
     slug: "api",
     group: "Reference",
-    title: "API reference",
+    title: "Automation",
     description:
-      "A compact HTTP contract shared by the website, Go CLI, and Expo app.",
+      "Use the CLI in scripts with explicit selections and structured output.",
     sections: [
       {
-        id: "authentication",
-        title: "Authentication",
-        paragraphs: [
-          "Native requests send a GitHub token in Authorization: Bearer <token>. Website requests use the encrypted HTTP-only session cookie. Cookie-authenticated write requests must include the configured APP_URL origin.",
-          "Responses containing private data use Cache-Control: no-store. Requests and responses are JSON unless a route performs an OAuth redirect.",
+        id: "list",
+        title: "Read structured file information",
+        code: [
+          {
+            label: "Terminal",
+            value: "varte list -o your-team -r api --json",
+          },
         ],
-      },
-      {
-        id: "routes",
-        title: "Routes",
-        table: {
-          headers: ["Method", "Path", "Behavior"],
-          rows: [
-            [
-              "GET",
-              "/api/health",
-              "Public service liveness check; does not validate external credentials",
-            ],
-            [
-              "GET",
-              "/api/auth/github",
-              "Return GitHub authorization URL and bind state cookie",
-            ],
-            [
-              "GET",
-              "/api/auth/github?browser=1",
-              "Redirect directly to GitHub",
-            ],
-            [
-              "GET",
-              "/api/auth/github/cli?redirect_uri=…",
-              "Begin native login with a validated callback",
-            ],
-            [
-              "GET",
-              "/api/auth/github/callback",
-              "Exchange authorization code, verify state, establish session",
-            ],
-            ["POST", "/api/auth/logout", "Clear the authenticated web session"],
-            ["GET", "/api/user", "Return the GitHub user"],
-            [
-              "GET",
-              "/api/repositories",
-              "Return accessible GitHub repositories with pagination handled server-side",
-            ],
-            [
-              "POST / GET",
-              "/api/env/list",
-              "List versions; repoFullName is optional",
-            ],
-            [
-              "POST",
-              "/api/env/pull",
-              "Return versions for repoFullName and exact directory",
-            ],
-            [
-              "POST",
-              "/api/env/push",
-              "Add an encrypted version; requires repository write access",
-            ],
-            [
-              "GET",
-              "/api/encryption-key",
-              "Return legacy passphrase to an authenticated client",
-            ],
-          ],
+        paragraphs: [
+          "Use --json when a script needs structured output. Choose the repository explicitly so the script does not depend on its working directory.",
+        ],
+        note: {
+          title: "Keep script output private",
+          text: "Structured output includes encrypted file content. Avoid public logs and shared artifacts.",
         },
       },
       {
         id: "pull",
-        title: "Pull request and response",
+        title: "Choose a file without a prompt",
         code: [
           {
-            label: "Request JSON",
+            label: "Terminal",
             value:
-              '{\n  "repoFullName": "your-team/api",\n  "directory": "server"\n}',
-          },
-          {
-            label: "Response JSON",
-            value:
-              '{\n  "success": true,\n  "envFiles": [\n    {\n      "id": "existing-document-id",\n      "envName": ".env.production",\n      "repoFullName": "your-team/api",\n      "directory": "server",\n      "userId": 123456,\n      "userName": "teammate",\n      "content": "<encrypted OpenSSL-compatible string>",\n      "isEncrypted": true,\n      "createdAt": "2026-10-05T09:30:00.000Z",\n      "updatedAt": "2026-10-05T09:30:00.000Z"\n    }\n  ]\n}',
-          },
-        ],
-      },
-      {
-        id: "push",
-        title: "Push payload",
-        code: [
-          {
-            label: "Request JSON",
-            value:
-              '{\n  "repoFullName": "your-team/api",\n  "directory": "server",\n  "envName": ".env.production",\n  "content": "<client-encrypted OpenSSL-compatible string>"\n}',
+              "varte pull -o your-team -r api -d backend --name .env.production --output .env",
           },
         ],
         paragraphs: [
-          "userId, userName, repoName, and timestamps are derived by the server. Client-supplied attribution is not trusted. The response is HTTP 201 with success and the new document id.",
+          "Set the repository, directory, saved name, and destination explicitly. If several versions share the same name, the newest matching version is selected.",
+        ],
+      },
+      {
+        id: "overwrite",
+        title: "Replace a destination intentionally",
+        code: [
+          {
+            label: "Terminal",
+            value:
+              "varte pull -o your-team -r api -d backend --name .env.production --output .env --force",
+          },
+        ],
+        paragraphs: [
+          "Use --force only when your script is meant to replace an existing file. Keep the destination out of version control. Symlinks and non-regular destinations are rejected.",
         ],
       },
       {
         id: "errors",
-        title: "Error responses",
-        table: {
-          headers: ["Status", "Meaning"],
-          rows: [
-            ["400", "Malformed input, missing field, or invalid OAuth state"],
-            ["401", "Missing, expired, or invalid session"],
-            ["403", "Request origin or repository permission denied"],
-            ["404", "Repository unavailable or endpoint not found"],
-            ["413", "JSON request is too large"],
-            ["429", "GitHub rate limit or access restriction"],
-            ["503", "Required server configuration is missing or invalid"],
-          ],
-        },
-        code: [
-          {
-            label: "Response JSON",
-            value: '{ "error": "Sign in to continue" }',
-          },
+        title: "Check command results",
+        paragraphs: [
+          "A failed command returns a nonzero exit code. Stop dependent steps when a pull fails. An empty list is successful and means there are no saved files in the selected scope.",
         ],
       },
     ],
@@ -871,222 +740,46 @@ export const documentation: DocPage[] = [
   {
     slug: "security",
     group: "Reference",
-    title: "Security & data",
+    title: "Privacy & access",
     description:
-      "Understand what is encrypted, who can access files, and which compatibility constraints matter.",
+      "Understand who can open your files and how to handle downloaded configuration.",
     sections: [
       {
         id: "encryption",
-        title: "Encrypted before upload",
+        title: "Encrypted files",
         paragraphs: [
-          "Your file contents are encrypted on your device before upload and stay encrypted in storage. When you open or pull a file, the client decrypts it locally after the server verifies your GitHub repository access.",
-          "AES-256-CBC encryption preserves compatibility with existing files. This format has no integrity tag and uses a shared server-managed passphrase available to authenticated clients. The service does not provide zero-knowledge storage or separate keys for each repository.",
+          "File contents are encrypted before upload and stay encrypted in storage. Opening or pulling a file makes its contents readable on your device.",
+          "Keep downloads, copied text, and local environment files private. Once copied or downloaded, they need the same care as any other project secret.",
         ],
-        note: {
-          title: "Do not rotate the encryption passphrase casually",
-          text: "Changing ENCRYPTION_KEY without a coordinated data re-encryption plan makes previously stored files unreadable. Preserve the original value during this migration.",
-        },
       },
       {
-        id: "metadata",
-        title: "File content and metadata",
-        table: {
-          headers: ["Field", "Protection"],
-          rows: [
-            ["content", "Encrypted before upload"],
-            ["Repository name and directory", "Plaintext metadata"],
-            ["User ID and username", "Plaintext attribution"],
-            ["Environment name and timestamps", "Plaintext metadata"],
-          ],
-        },
+        id: "versions",
+        title: "Versions and attribution",
         paragraphs: [
-          "Existing encrypted versions remain intact. Each upload adds a new version; it does not rewrite earlier IDs, authors, timestamps, or ciphertext. Repository names, file names, directories, and attribution help you find and identify a version without decrypting its contents.",
+          "Each upload adds a saved version. Earlier uploads remain available with their file name, repository, directory, author, and timestamp. These details help collaborators find the right configuration.",
         ],
       },
       {
         id: "access",
-        title: "Repository authorization",
+        title: "Repository access",
         paragraphs: [
-          "Reads require repository access reported by GitHub. Push requires push or admin permission. Authentication alone is insufficient to read a repository’s environment records. A public source repository does not make its environment files public: read access also requires verified repository membership.",
-          "Repository lists include accessible repositories and saved repository names whose access is verified again. This keeps saved files discoverable after a repository is renamed or omitted from the usual GitHub listing. File requests and encryption-key requests require authentication; native clients send bearer tokens.",
+          "Sign in with your own GitHub account. Reading environment files requires repository access; uploading requires write access. A public source repository does not make its environment files public.",
+          "Only share configuration that your repository collaborators are allowed to use. Review your GitHub access when teammates join or leave.",
         ],
       },
       {
-        id: "sessions",
-        title: "Sessions and device storage",
+        id: "devices",
+        title: "Protect your device and clipboard",
         paragraphs: [
-          "Web sessions are encrypted with AES-256-GCM in HTTP-only cookies and use Secure cookies in production. OAuth state is bound to a short-lived browser cookie. The callback accepts only the supported mobile deep link or a loopback /callback URL.",
-          "The Expo app stores native tokens in SecureStore. The Go CLI stores tokens in an owner-only local configuration file where supported. Decrypted files and copied clipboard content are plaintext and need normal secret handling.",
+          "Sign out after using a shared device. Add real environment files to .gitignore and keep them out of public logs, screenshots, and build artifacts.",
+          "The mobile app hides decrypted contents when it moves into the background. Clipboard contents remain until replaced, so clear sensitive copied text when you finish.",
         ],
       },
-    ],
-  },
-  {
-    slug: "deployment",
-    group: "Maintainers",
-    title: "Deployment",
-    description:
-      "Deploy the consolidated Next server, keep existing data intact, and connect the native clients.",
-    sections: [
       {
-        id: "next",
-        title: "1. Configure the Next project",
-        steps: [
-          "Set the Vercel project Root Directory to Next.",
-          "Choose Next.js and Node.js 22 or newer.",
-          "Add the server environment variables from Next/.env.example.",
-          "Keep the original storage credentials and encryption passphrase so existing versions remain readable.",
-          "Generate a distinct SESSION_SECRET with at least 32 random characters.",
-        ],
-        code: [
-          {
-            label: "Production URLs",
-            value:
-              "APP_URL=https://vathavaran-variable.vercel.app\nGITHUB_CALLBACK_URL=https://vathavaran-variable.vercel.app/api/auth/github/callback",
-          },
-          {
-            label: "Generate a session secret",
-            value:
-              "node -e \"console.log(require('node:crypto').randomBytes(48).toString('hex'))\"",
-          },
-        ],
-        note: {
-          title: "A health check is not a database check",
-          text: "GET /api/health confirms the app is running. Verify a real authenticated repository list and existing file read before treating the migration as complete.",
-        },
-      },
-      {
-        id: "storage-key",
-        title: "Import the server private key",
+        id: "backups",
+        title: "Keep a separate backup",
         paragraphs: [
-          "Use the private-key variable named in Next/.env.example. It must contain the complete service-account PEM key, including its BEGIN PRIVATE KEY and END PRIVATE KEY lines. In the Vercel dashboard, paste the key with its original line breaks. When importing a .env file, use a quoted value with a single escaped \\n between lines. Do not add JSON escaping a second time.",
-          "The server supports multiline PEM, escaped newlines, and doubly escaped legacy imports. Invalid keys return a configuration error without exposing the credential. After updating any production variable, redeploy so the new value reaches the running server.",
-        ],
-        note: {
-          title: "Keep the original encryption passphrase",
-          text: "Correcting server credential formatting does not require changing ENCRYPTION_KEY. Preserve that value so existing files remain readable.",
-        },
-      },
-      {
-        id: "github",
-        title: "2. Update the GitHub OAuth app",
-        table: {
-          headers: ["GitHub setting", "Value"],
-          rows: [
-            ["Homepage URL", "https://vathavaran-variable.vercel.app"],
-            [
-              "Authorization callback URL",
-              "https://vathavaran-variable.vercel.app/api/auth/github/callback",
-            ],
-          ],
-        },
-        paragraphs: [
-          "In GitHub Settings → Developer settings → OAuth Apps, select the application matching GITHUB_CLIENT_ID. Keep its client ID and secret.",
-          "Use a separate development OAuth app for localhost. Its callback, client ID, and secret must match the local Next environment.",
-        ],
-      },
-      {
-        id: "verify",
-        title: "3. Verify before cutting over",
-        steps: [
-          "Build Next with npm run build and check its type, lint, and security tests.",
-          "Sign in through the production website and open a repository with existing files.",
-          "Verify old document IDs, ciphertext, and timestamps through read-only checks.",
-          "Decrypt an existing file on a client without logging its contents.",
-          "Confirm anonymous file and encryption-key requests are rejected.",
-        ],
-      },
-      {
-        id: "cli",
-        title: "4. Prepare the npm CLI release",
-        code: [
-          {
-            label: "Terminal",
-            value:
-              "cd Go-cli\ngo test -race ./...\ngo vet ./...\nnpm run build\nnpm pack",
-          },
-        ],
-        paragraphs: [
-          "The build produces six binaries and SHA256 checksums. Inspect the package and test the launcher before publishing. Release varte 2.0.0 only after the Next production server is verified. npm publishing requires access to the existing varte package and is a separate action.",
-        ],
-      },
-      {
-        id: "expo",
-        title: "5. Build the Android preview",
-        code: [
-          {
-            label: "Terminal",
-            value: "cd Expo\neas build --profile preview --platform android",
-          },
-        ],
-        paragraphs: [
-          "The preview profile targets the singular-domain Next URL and builds an APK. Link the Expo project to the correct account, provide signing credentials if prompted, and monitor the resulting EAS build. An uploaded build is not a successful APK until EAS reports completion.",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "development",
-    group: "Maintainers",
-    title: "Local development",
-    description:
-      "Work on the server, native CLI, and mobile application with reproducible local checks.",
-    sections: [
-      {
-        id: "structure",
-        title: "Repository structure",
-        code: [
-          {
-            label: "Folders",
-            value:
-              "Go-cli/   Go implementation, npm launcher, binary build script\nNext/     Website and all HTTP server routes\nExpo/     React Native mobile application\nDocs/     Local context, plans, and credential retrieval (gitignored)",
-          },
-        ],
-      },
-      {
-        id: "next",
-        title: "Run the Next server",
-        paragraphs: [
-          "Use Node.js 22+. Set APP_URL=http://localhost:3000 and the development OAuth callback to http://localhost:3000/api/auth/github/callback. Never commit .env.local.",
-        ],
-        code: [
-          {
-            label: "Start",
-            value: "cd Next\nnpm ci\ncp .env.example .env.local\nnpm run dev",
-          },
-          {
-            label: "Check",
-            value: "npm run typecheck\nnpm run lint\nnpm test\nnpm run build",
-          },
-        ],
-      },
-      {
-        id: "go",
-        title: "Learn the Go CLI layout",
-        paragraphs: [
-          "cmd/varte/main.go is the executable entry point. internal/varte/app.go handles commands; client.go talks to Next; oauth.go receives browser callbacks; config.go handles sessions; crypto.go preserves encrypted files.",
-          "Go returns errors explicitly. The entry point prints a useful error and exits with status 1. gofmt is the standard formatter. The CLI uses golang.org/x/term for terminal detection; the remaining implementation uses Go’s standard library.",
-        ],
-        code: [
-          {
-            label: "Terminal",
-            value:
-              "cd Go-cli\ngofmt -w .\ngo test -race ./...\ngo vet ./...\ngo run ./cmd/varte --help",
-          },
-        ],
-      },
-      {
-        id: "expo",
-        title: "Run Expo",
-        code: [
-          {
-            label: "Terminal",
-            value:
-              "cd Expo\nnpm ci\nnpx expo start\nnpm run typecheck\nnpx expo install --check",
-          },
-        ],
-        paragraphs: [
-          "For a physical Android device, localhost points at the phone rather than your computer. Use the deployed HTTPS Next server or a reachable development URL. The app’s native OAuth deep link is intended for a development or preview build, not an arbitrary Expo Go callback.",
+          "Keep a separate backup of configuration your project depends on. Before changing a saved setup, confirm that the new version works and retain the previous working version.",
         ],
       },
     ],
@@ -1096,13 +789,13 @@ export const documentation: DocPage[] = [
     group: "Support",
     title: "Troubleshooting",
     description:
-      "Start with the failing boundary: your session, repository access, directory label, server configuration, or file destination.",
+      "Resolve sign-in, repository access, file selection, and download problems.",
     sections: [
       {
         id: "login",
-        title: "“Not signed in” or HTTP 401",
+        title: "Not signed in",
         steps: [
-          "Run varte status to verify the saved account and server.",
+          "Run varte status to check the connected account.",
           "Run varte login if the session is absent, expired, or revoked.",
           "Confirm the token can access the target organization and repository.",
         ],
@@ -1112,40 +805,16 @@ export const documentation: DocPage[] = [
       },
       {
         id: "callback",
-        title: "GitHub callback mismatch",
-        steps: [
-          "Open GitHub Settings → Developer settings → OAuth Apps, then select your application.",
-          "Compare its Client ID with GITHUB_CLIENT_ID in Vercel Production. Select the matching application, even if another app has the same name.",
-          "Set its Homepage URL and Authorization callback URL to the production values below, then save the application settings.",
-          "If you intend to use a different OAuth app, update both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in Vercel with that app’s matching credentials and redeploy.",
-          "Open /auth on the production website and begin a fresh sign-in. Earlier authorization links contain a state value that can expire.",
-        ],
-        table: {
-          headers: ["Setting", "Production value"],
-          rows: [
-            ["Homepage URL / APP_URL", "https://vathavaran-variable.vercel.app"],
-            [
-              "Authorization callback URL / GITHUB_CALLBACK_URL",
-              "https://vathavaran-variable.vercel.app/api/auth/github/callback",
-            ],
-          ],
-        },
+        title: "GitHub sign-in could not complete",
         paragraphs: [
-          "GitHub’s warning that the redirect_uri is not associated with the application means its OAuth registration does not accept the callback requested by the server. Register that callback in the OAuth app selected by the deployed Client ID.",
-          "The GitHub OAuth app’s Authorization callback URL and the server’s GITHUB_CALLBACK_URL must point at the same deployment. APP_URL must identify that website. Updating an environment variable requires a new deployment to take effect.",
-          "For this production project, use the singular hostname vathavaran-variable.vercel.app. The original website used the plural hostname, which is a different origin. Start a fresh sign-in after changing settings.",
+          "Start a fresh sign-in from the website or varte login, then finish it in the same browser. If GitHub reports that sign-in is misconfigured, contact the project maintainer with the error message and the time it occurred.",
         ],
-        note: {
-          title: "If the matching app is owned by someone else",
-          text: "Ask that app’s owner to update its registered callback, or configure an OAuth app you control and use its matching credentials in Vercel. Keep the existing storage credentials and encryption passphrase unchanged.",
-        },
       },
       {
         id: "state",
         title: "“Login expired or state invalid”",
         paragraphs: [
-          "Start sign-in again from the website or CLI. Complete it in the same browser context that opened the authorization flow. The OAuth state cookie expires after ten minutes; the CLI waits five minutes.",
-          "Avoid mixing localhost, a preview deployment, and the production domain during one login. The browser cookie must return to the same server origin that issued it.",
+          "Start sign-in again from the website or CLI. Complete it in the same browser that opened the sign-in flow. If the CLI stops waiting, run varte login again.",
         ],
       },
       {
@@ -1172,8 +841,7 @@ export const documentation: DocPage[] = [
         id: "decrypt",
         title: "“Could not decrypt file”",
         paragraphs: [
-          "Confirm the server still uses the original ENCRYPTION_KEY. A new random key cannot decrypt earlier uploads. Verify that ciphertext has not been truncated or replaced with plaintext.",
-          "The Go fixture tests check the CryptoJS format independently. If a legacy file is unreadable, preserve the original document and investigate before attempting any rewrite or key rotation.",
+          "Keep the existing saved version and local file intact. Try opening the file again with the current CLI or website. If the problem continues, contact the maintainer with the file name and error message, without sending the secret contents.",
         ],
       },
       {
@@ -1185,16 +853,21 @@ export const documentation: DocPage[] = [
       },
       {
         id: "server",
-        title: "Missing server configuration or empty production workspace",
+        title: "Workspace or connection unavailable",
         paragraphs: [
-          "Check the Vercel project’s Root Directory is Next and Node.js is 22+. Add every server variable listed in Next/.env.example and redeploy. The storage credentials must still point to your existing encrypted versions.",
-          "The public /api/health endpoint only checks service liveness. An authenticated file read is needed to verify credentials and database connectivity.",
-          "If the server reports an invalid private key, check the variable named in the error against Next/.env.example and reimport the complete PEM key from the service-account credential. Use real line breaks in a dashboard paste, or single escaped \\n sequences in a quoted .env value. Redeploy after saving the variable. An HTTP 500 from a storage route needs its Vercel runtime log checked; do not treat it as an empty repository.",
+          "Check your network connection and retry. If the workspace remains unavailable, contact the maintainer with the time, client version, and error message.",
+          "Do not interpret a failed request as proof that files have been deleted. Keep your local working configuration until access is restored.",
         ],
       },
     ],
   },
 ];
+
 export function docHref(slug: string) {
   return slug ? `/docs/${slug}` : "/docs";
+}
+
+export function legacyDocDestination(slug: string) {
+  if (slug === "deployment") return "/docs";
+  if (slug === "development") return "/docs/installation";
 }

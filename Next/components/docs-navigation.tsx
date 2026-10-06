@@ -86,14 +86,9 @@ export function DocsNavigation({
                 ))}
             </div>
           ))}
-          <a
-            className="docs-repo-link"
-            href="https://github.com/wrestle-R/Vathavaran-Variables"
-            target="_blank"
-            rel="noreferrer"
-          >
-            View source <ArrowUpRight size={13} />
-          </a>
+          <Link className="docs-repo-link" href="/docs/quickstart">
+            Start the quickstart <ArrowUpRight size={13} />
+          </Link>
         </nav>
       </aside>
       <dialog

@@ -1,27 +1,15 @@
-# Expo
+# Mobile app
 
-Vathavaran's mobile client. Defaults to the new Next API at
-https://vathavaran-variable.vercel.app.
+Find and open your repository environment files on Android.
 
-```sh
-npm ci
-npm start
-npm run typecheck
-npm run lint
-npx expo install --check
-npx expo-doctor
-eas build --profile preview --platform android
-```
+[Download the preview APK](https://expo.dev/artifacts/eas/k-OK0GGHhh5ieZAVBmlW_tqWIDgADnl30EbHG3yrxcM.apk) ·
+[Read the mobile guide](https://vathavaran-variable.vercel.app/docs/guides/mobile)
 
-The internal preview profile creates an Android APK. Its GitHub browser login returns
-to `vathavaran://auth/callback`; the Next server owns the GitHub callback itself.
-Use a preview/development build for this native deep link.
+Sign in with GitHub, select a repository, and choose a saved file to open or copy.
+Your GitHub account determines which repository files are available.
 
-The account screen offers dark/light/system themes. Native tokens are stored in
-SecureStore; legacy plaintext fallback sessions are migrated into secure storage.
-Decrypted file contents are only held in the current file sheet and hidden when the
-app goes into the background. Clipboard contents remain until replaced.
+The Account screen offers dark, light, and system themes. Dark is the default.
+The app hides decrypted contents when it moves into the background. Clipboard
+contents remain until replaced, so clear sensitive copied text when you finish.
 
-Server environment credentials do not belong in Expo. Only EXPO_PUBLIC_BACKEND_URL
-and EXPO_PUBLIC_AUTH_CALLBACK_URL are public configuration. Changes require a new
-bundle/build. Run dependency checks before changing Expo SDK versions.
+This is a preview build. Physical-device verification remains pending.

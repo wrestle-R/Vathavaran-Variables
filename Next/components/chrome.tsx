@@ -31,7 +31,7 @@ export function Header() {
         <nav className={menu ? "nav open" : "nav"} aria-label="Main navigation">
           <Link
             href="/docs"
-            aria-current={path === "/docs" ? "page" : undefined}
+            aria-current={path.startsWith("/docs") ? "page" : undefined}
             onClick={() => setMenu(false)}
           >
             Documentation
@@ -72,13 +72,7 @@ export function Footer() {
       <p>Less setup. More shipping.</p>
       <div>
         <Link href="/docs">Docs</Link>
-        <a
-          href="https://github.com/wrestle-R/Vathavaran-Variables"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub <ArrowUpRight size={13} />
-        </a>
+        <Link href="/docs/security">Privacy & access</Link>
       </div>
     </footer>
   );
