@@ -1,6 +1,6 @@
 {
   "name": "varte",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Native Go CLI for encrypted environment files across GitHub repositories",
   "bin": {
     "varte": "npm/varte.cjs"

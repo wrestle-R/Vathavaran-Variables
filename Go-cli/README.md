@@ -10,9 +10,8 @@ varte login
 varte status
 ```
 
-Supports Linux, macOS, and Windows on x64 and arm64. Version 2.0.0 is available
-under the existing varte package name. Existing commands and saved environment
-files remain compatible.
+Supports Linux, macOS, and Windows on x64 and arm64. Version 2.1.0 adds variable search and exact-version
+pulls. Existing commands and saved environment files remain compatible.
 
 ## Push, find, and pull files
 

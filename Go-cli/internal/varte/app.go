@@ -18,7 +18,7 @@ import (
 	"golang.org/x/term"
 )
 
-var Version = "2.0.0"
+var Version = "2.1.0"
 
 type App struct {
 	In          *bufio.Reader
