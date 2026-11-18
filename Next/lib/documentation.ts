@@ -522,6 +522,49 @@ export const documentation: DocPage[] = [
     ],
   },
   {
+    slug: "guides/search",
+    group: "Guides",
+    title: "Search variable names",
+    description: "Find the saved repository, file, and version that contains an environment variable.",
+    sections: [
+      {
+        id: "find",
+        title: "Find a variable across projects",
+        steps: [
+          "On the website, open Search variables in Workspace or on a repository page. In the mobile app, use the Search tab or Search variables inside a repository.",
+          "Enter a variable name or part of one. Search is case insensitive. Use Exact name to match the complete name.",
+          "Narrow the scan by repository, directory, or filename. Directory and filename labels match exactly. Use Root only for files saved without a directory.",
+          "Use Include history to scan older versions. By default, search checks the newest version of each filename in each directory.",
+          "Choose View version to select a saved version. Reveal contents is a separate action.",
+        ],
+      },
+      {
+        id: "cli",
+        title: "Search from the terminal",
+        code: [
+          { label: "All accessible repositories", value: "varte search GROK --json" },
+          { label: "One repository and filename", value: "varte search GROK_API_KEY --exact --owner example --repo project --directory backend --name .env.production" },
+          { label: "Search older versions", value: "varte search GROK --history" },
+          { label: "Download an exact result to a file", value: "varte pull --id SAVED_ID --output .env.production" },
+        ],
+        paragraphs: [
+          "Search defaults to all accessible repositories, even inside a Git checkout. Use --directory \"\" to select the repository root. Pull keeps overwrite protection when you select a version by ID.",
+          "JSON on stdout includes schemaVersion, status, scanned, eligible, matches, and errors. Matches include variable names and saved-file metadata. Progress and diagnostics go to stderr.",
+          "A completed search exits 0, including a completed search with no matches. An incomplete scan exits 2 and a cancelled scan exits 130. Command and sign-in setup errors exit 1.",
+        ],
+      },
+      {
+        id: "limits",
+        title: "Understand search progress",
+        paragraphs: [
+          "Clients fetch authorized saved files and decrypt them locally to parse assignment names. Search results omit values and file bodies. The authenticated backend supplies the encryption key.",
+          "Search covers saved files. Check upload status and exact labels if a file is missing. Enable history to look for a variable removed from a current version.",
+          "A scan can be incomplete when discovery fails or files cannot be fetched or decrypted. Check your connection and access, then try a narrower search. Cancel from the screen or press Ctrl+C in Varte. Mobile search cancels when the app moves to the background.",
+        ],
+      },
+    ],
+  },
+  {
     slug: "guides/web",
     group: "Guides",
     title: "Web workspace",

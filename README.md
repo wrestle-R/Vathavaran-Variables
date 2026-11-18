@@ -61,3 +61,15 @@ shared device and keep a separate backup of critical project configuration.
 Read the [privacy and access guide](https://vathavaran-variable.vercel.app/docs/security)
 for practical handling advice and the [troubleshooting guide](https://vathavaran-variable.vercel.app/docs/troubleshooting)
 for sign-in, permissions, and file-selection problems.
+
+## Find a variable across repositories
+
+Use **Search variables** in the web workspace, **Search** in the Expo app, or
+`varte search GROK --json` in a build that supports search. Results show matching
+names and saved versions. Add `--history` in the CLI to include earlier uploads.
+
+The [Vathavaran agent skill](skills/vathavaran/SKILL.md) covers safe discovery,
+uploads, and exact-version downloads. For Codex, copy the `skills/vathavaran`
+directory into your project's `.agents/skills/` directory, including its
+`references` folder. For other agents, load the skill and workflow reference
+through the agent's supported instruction mechanism.

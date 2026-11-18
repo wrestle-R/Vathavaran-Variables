@@ -13,3 +13,11 @@ The app hides decrypted contents when it moves into the background. Clipboard
 contents remain until replaced, so clear sensitive copied text when you finish.
 
 This is a preview build. Physical-device verification remains pending.
+
+## Search saved files
+
+In a build that includes search, use the **Search** tab for all accessible
+repositories or **Search variables** from a repository. Search shows variable
+names and file locations. Use **Include history** for older versions, then
+**View version** and **Reveal contents** to open one specific version. Moving
+the app to the background cancels an active search.

@@ -43,3 +43,20 @@ session files or put tokens directly into command arguments.
 Read the [CLI guides](https://vathavaran-variable.vercel.app/docs) for command
 options, examples, and troubleshooting. See [third-party notices](THIRD-PARTY-NOTICES.md)
 for license acknowledgments.
+
+## Find a saved variable
+
+```sh
+varte search GROK --json
+varte search GROK_API_KEY --exact --owner example --repo project
+varte search GROK --directory backend --name .env.production --history
+varte pull --id SAVED_ID --output .env.production
+```
+
+Search defaults to all accessible repositories and the latest version of each
+file. Use `--directory ""` for the root. Search output contains names and version
+metadata. `list --json` includes file bodies. An incomplete search exits 2 and
+reports what it could scan. A cancelled search exits 130.
+
+Check `varte --help` for search support. To try this checkout with a compatible
+backend, run `go build -o varte ./cmd/varte` in this directory.
