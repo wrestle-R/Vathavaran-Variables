@@ -76,6 +76,7 @@ export function Button({
   const { colors } = useAppTheme();
   return (
     <Touch
+      accessibilityLabel={label}
       onPress={onPress}
       disabled={disabled}
       style={{

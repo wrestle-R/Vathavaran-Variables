@@ -112,7 +112,7 @@ function AppTabs() {
         component={RepositoriesStackScreen}
         options={{ headerShown: false }}
       />
-      <Tab.Screen name="Search" component={VariableSearchScreen} options={{ headerTitle: 'Search variables' }} />
+      <Tab.Screen name="Search" component={VariableSearchScreen} options={{ headerTitle: 'Search variables', tabBarAccessibilityLabel: 'Search' }} />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
