@@ -1,6 +1,6 @@
 {
   "name": "vathavaran-mobile",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",

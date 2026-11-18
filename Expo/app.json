@@ -3,7 +3,7 @@
     "name": "Vathavaran",
     "slug": "vathavaran",
     "scheme": "vathavaran",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "backgroundColor": "#111413",
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,7 +40,8 @@
         "foregroundImage": "./assets/adaptive-icon-foreground.png",
         "backgroundColor": "#111413"
       },
-      "package": "com.russeldp.vathavaran"
+      "package": "com.russeldp.vathavaran",
+      "versionCode": 2
     },
     "owner": "russeldp",
     "extra": {
