@@ -2,6 +2,7 @@ package varte
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,9 +17,10 @@ import (
 const DefaultBackend = "https://vathavaran-variable.vercel.app"
 
 type Client struct {
-	Base  string
-	Token string
-	HTTP  *http.Client
+	Context context.Context
+	Base    string
+	Token   string
+	HTTP    *http.Client
 }
 type User struct {
 	ID    int64  `json:"id"`
@@ -58,7 +60,11 @@ func (client *Client) Request(method, path string, input, output any) error {
 		}
 		body = bytes.NewReader(raw)
 	}
-	request, err := http.NewRequest(method, client.Base+path, body)
+	ctx := client.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	request, err := http.NewRequestWithContext(ctx, method, client.Base+path, body)
 	if err != nil {
 		return err
 	}

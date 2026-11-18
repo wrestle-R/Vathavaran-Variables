@@ -79,6 +79,7 @@ Commands:
   push     Encrypt and upload a version of an environment file
   pull     Select, decrypt, and save an environment file
   list     List stored files (--json for scripts)
+  search   Find variable names across accessible projects
 
 Options:
   -o, --owner       Repository owner (detected from Git when possible)
@@ -88,7 +89,10 @@ Options:
   -n, --name        Stored file name to push or select when pulling
       --output      Pull destination
       --force       Allow replacing an existing destination
-      --json        Print list as JSON
+      --id          Pull an exact saved file ID (no repository flags needed)
+      --exact       Match a complete variable name in search
+      --history     Search older versions too
+      --json        Print list or search as JSON
   -V, --version     Print version
   -h, --help        Print help
 
@@ -114,8 +118,8 @@ func (app *App) Run(args []string) error {
 	command := args[0]
 	options := flag.NewFlagSet(command, flag.ContinueOnError)
 	options.SetOutput(app.Err)
-	var owner, repo, directory, file, name, output, tokenEnv string
-	var force, jsonOutput, help bool
+	var owner, repo, directory, file, name, output, tokenEnv, recordID, query string
+	var force, jsonOutput, help, exact, history bool
 	options.StringVar(&owner, "owner", "", "Repository owner")
 	options.StringVar(&owner, "o", "", "Repository owner")
 	options.StringVar(&repo, "repo", "", "Repository name")
@@ -128,18 +132,28 @@ func (app *App) Run(args []string) error {
 	options.StringVar(&name, "n", "", "Stored environment file name")
 	options.StringVar(&output, "output", "", "Destination file")
 	options.StringVar(&tokenEnv, "token-env", "", "Read a GitHub token from this environment variable")
+	options.StringVar(&recordID, "id", "", "Exact saved file ID to pull")
+	options.BoolVar(&exact, "exact", false, "Match the complete variable name")
+	options.BoolVar(&history, "history", false, "Search historical versions")
 	options.BoolVar(&force, "force", false, "Replace an existing file")
 	options.BoolVar(&jsonOutput, "json", false, "Print JSON")
 	options.BoolVar(&help, "help", false, "Show help")
 	options.BoolVar(&help, "h", false, "Show help")
-	if err := options.Parse(args[1:]); err != nil {
+	parseArgs := args[1:]
+	if command == "search" && len(parseArgs) > 0 && !strings.HasPrefix(parseArgs[0], "-") {
+		query = parseArgs[0]
+		parseArgs = parseArgs[1:]
+	}
+	if err := options.Parse(parseArgs); err != nil {
 		return err
 	}
 	if help {
 		app.help()
 		return nil
 	}
-	if len(options.Args()) > 0 {
+	if command == "search" && query == "" && len(options.Args()) == 1 {
+		query = options.Args()[0]
+	} else if len(options.Args()) > 0 {
 		return fmt.Errorf("unexpected argument: %s", options.Args()[0])
 	}
 	switch command {
@@ -170,7 +184,7 @@ func (app *App) Run(args []string) error {
 		}
 		fmt.Fprintf(app.Out, "Signed in as %s.\n", user.Login)
 		return nil
-	case "status", "push", "pull", "list":
+	case "status", "push", "pull", "list", "search":
 	default:
 		return fmt.Errorf("unknown command %q; run varte --help", command)
 	}
@@ -189,6 +203,36 @@ func (app *App) Run(args []string) error {
 		}
 		fmt.Fprintf(app.Out, "Signed in as %s\nServer: %s\n", user.Login, client.Base)
 		return nil
+	}
+	if command == "search" {
+		input := map[string]any{}
+		if (owner == "") != (repo == "") {
+			return errors.New("search requires both --owner and --repo when scoped")
+		}
+		if repo != "" {
+			input["repoFullName"] = owner + "/" + repo
+		}
+		options.Visit(func(f *flag.Flag) {
+			if f.Name == "directory" || f.Name == "d" {
+				input["directory"] = directory
+			}
+			if f.Name == "name" || f.Name == "n" {
+				input["envName"] = name
+			}
+		})
+		return app.search(client, query, input, exact, history, jsonOutput)
+	}
+	if command == "pull" && recordID != "" {
+		if owner != "" || repo != "" || directory != "" || name != "" {
+			return errors.New("--id cannot be combined with repository, directory, or name selectors")
+		}
+		var record struct {
+			File EnvFile `json:"file"`
+		}
+		if err := client.Request("POST", "/api/env/record", map[string]string{"id": recordID}, &record); err != nil {
+			return err
+		}
+		return app.saveSelected(client, record.File, output, force)
 	}
 	gitOwner, gitRepo := gitRepository()
 	if repo != "" && owner == "" {
@@ -333,6 +377,10 @@ func (app *App) Run(args []string) error {
 		}
 		selected = data.EnvFiles[index-1]
 	}
+	return app.saveSelected(client, selected, output, force)
+}
+func (app *App) saveSelected(client *Client, selected EnvFile, output string, force bool) error {
+	var err error
 	var plain []byte
 	if selected.IsEncrypted {
 		key, err := client.Key()

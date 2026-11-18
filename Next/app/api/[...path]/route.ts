@@ -1,3 +1,4 @@
+import { searchDiscovery, searchRecord } from "@/lib/search-api";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -137,6 +138,8 @@ async function handle(request: NextRequest) {
       return response;
     }
     const { token, user } = await authenticate(request);
+    if (path === "/api/env/discover" && request.method === "POST") return await searchDiscovery(request, token, user.id);
+    if (path === "/api/env/record" && request.method === "POST") return await searchRecord(request, token);
     if (path === "/api/workspace" && request.method === "GET") {
       const allowed = await repositories(token, user.id);
       const names = [...new Set(allowed.flatMap(repo => [repo.full_name, ...(repo.storageNames ?? [])]))];

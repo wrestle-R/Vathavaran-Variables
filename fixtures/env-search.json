@@ -1,0 +1,7 @@
+[
+  {"name":"assignments","text":"\ufeff# comment\r\nexport GROK_API_KEY = fake-secret\r\nEMPTY=\r\nURL=a=b=c\r\nGROK_API_KEY=duplicate\r\nBAD-NAME=skip\r\n","names":["EMPTY","GROK_API_KEY","URL"]},
+  {"name":"multiline","text":"CERT=\"first\nFAKE_KEY=inside\nlast\"\nREAL_KEY=ok\nSINGLE='first\nOTHER_FAKE=inside\nlast'\nTICK=`first\nTICK_FAKE=inside\nlast`\n","names":["CERT","REAL_KEY","SINGLE","TICK"]},
+  {"name":"escaped quotes","text":"QUOTED=\"hello \\\"world\\\"\"\nNEXT=ok\n","names":["NEXT","QUOTED"]},
+  {"name":"empty","text":"# NOTHING=comment\ninvalid line\n","names":[]},
+  {"name":"unterminated","text":"BROKEN=\"first\nFALSE_MATCH=value\n","error":true}
+]

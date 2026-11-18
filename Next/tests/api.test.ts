@@ -274,3 +274,73 @@ test("workspace authenticates and discovers repositories once, returning counts 
     collectionMock.mock.restore();
   }
 });
+
+test('search discovery paginates metadata only across repositories, aliases, and bound cursors', async () => {
+  process.env.SESSION_SECRET = 'search-test-session-secret-at-least-32-characters';
+  let userId = 10;
+  const fetchMock = mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    const path = new URL(typeof input === 'string' || input instanceof URL ? input : input.url).pathname;
+    if (path === '/user') return Response.json({ id: userId, login: 'reader' });
+    if (path === '/user/repos') return Response.json([{ id: 1, full_name: 'owner/repo' }, { id: 2, full_name: 'team/other' }]);
+    if (path === '/repos/owner/old') return Response.json({ id: 1, full_name: 'owner/repo', private: true, permissions: { pull: true } });
+    throw new Error(`Unexpected request ${path}`);
+  });
+  const records = Array.from({ length: 102 }, (_, i) => ({ ...document, id: `A${String(i).padStart(3, '0')}`, repoFullName: i === 0 ? 'owner/old' : 'owner/repo' }));
+  const other = { ...document, id: 'B000', repoFullName: 'team/other' };
+  const collectionMock = mock.method(db, 'collection', () => ({
+    where: (field: string, _op: string, names: string[]) => {
+      if (field === 'userId') return { select: () => ({ get: async () => ({ docs: [{ data: () => ({ repoFullName: 'owner/old' }) }] }) }) };
+      let selected: string[] = [], after = '', limit = 0;
+      const query = {
+        select: (...fields: string[]) => { selected = fields; return query; },
+        orderBy: () => query,
+        limit: (value: number) => { limit = value; return query; },
+        startAfter: (value: string) => { after = value; return query; },
+        get: async () => {
+          assert.ok(!selected.includes('content')); assert.equal(limit, 101);
+          return { docs: [...records, other].filter(r => names.includes(r.repoFullName) && r.id > after).slice(0, limit).map(r => ({ id: r.id, data: () => Object.fromEntries(selected.map(key => [key, r[key as keyof typeof r]])) })) };
+        },
+      };
+      return query;
+    },
+  }) as never);
+  try {
+    const page1 = await POST(request('/api/env/discover', {}));
+    assert.equal(page1.status, 200); assert.equal(page1.headers.get('cache-control'), 'no-store');
+    const first = await page1.json(); assert.equal(first.files.length, 100);
+    assert.equal(first.files[0].repoFullName, 'owner/repo');
+    assert.ok(!JSON.stringify(first).includes(ciphertext)); assert.equal(first.files[0].content, undefined);
+    const page2 = await POST(request('/api/env/discover', { cursor: first.nextCursor }));
+    const second = await page2.json(); assert.equal(second.files.length, 2);
+    const page3 = await POST(request('/api/env/discover', { cursor: second.nextCursor }));
+    const third = await page3.json(); assert.deepEqual(third.files.map((f: { id: string }) => f.id), ['B000']); assert.equal(third.nextCursor, null);
+    assert.equal((await POST(request('/api/env/discover', { cursor: first.nextCursor, directory: 'other' }))).status, 400);
+    assert.equal((await POST(request('/api/env/discover', { cursor: first.nextCursor + 'tampered' }))).status, 400);
+    userId = 11;
+    assert.equal((await POST(request('/api/env/discover', { cursor: first.nextCursor }))).status, 400);
+  } finally { fetchMock.mock.restore(); collectionMock.mock.restore(); }
+});
+
+test('exact saved-record retrieval preserves the ID and rechecks repository access', async () => {
+  let read = true, exists = true;
+  const fetchMock = mock.method(globalThis, 'fetch', async (input: string | URL | Request) => {
+    const path = new URL(typeof input === 'string' || input instanceof URL ? input : input.url).pathname;
+    if (path === '/user') return Response.json({ id: 10, login: 'reader' });
+    if (path === '/repos/owner/repo') return Response.json({ id: 1, full_name: 'owner/repo', private: true, permissions: { pull: read } });
+    throw new Error(`Unexpected ${path}`);
+  });
+  const collectionMock = mock.method(db, 'collection', () => ({ doc: (id: string) => {
+    assert.equal(id, 'exact-id'); return { get: async () => ({ exists, id, data: () => document }) };
+  } }) as never);
+  try {
+    const allowed = await POST(request('/api/env/record', { id: 'exact-id' }));
+    assert.equal(allowed.status, 200); assert.equal((await allowed.json()).file.id, 'exact-id');
+    read = false;
+    const denied = await POST(request('/api/env/record', { id: 'exact-id' }));
+    assert.equal(denied.status, 404); const message = await denied.json();
+    assert.ok(!JSON.stringify(message).includes('owner/repo')); assert.ok(!JSON.stringify(message).includes(ciphertext));
+    exists = false;
+    assert.deepEqual(await (await POST(request('/api/env/record', { id: 'exact-id' }))).json(), message);
+    assert.equal((await POST(request('/api/env/record', { id: '../bad' }))).status, 400);
+  } finally { fetchMock.mock.restore(); collectionMock.mock.restore(); }
+});

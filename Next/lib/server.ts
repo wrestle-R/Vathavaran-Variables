@@ -183,7 +183,7 @@ export async function repositoryAccess(
   }
   return value;
 }
-export async function repositories(token: string, userId?: number) {
+export async function repositories(token: string, userId?: number, requireStoredAliases = false) {
   const output: Repository[] = [];
   for (let page = 1; page <= 100; page++) {
     const batch = await github<Repository[]>(
@@ -211,6 +211,7 @@ export async function repositories(token: string, userId?: number) {
     names = [...new Set(snapshot.docs.map((doc) => doc.data().repoFullName))]
       .filter(validRepository);
   } catch (error) {
+    if (requireStoredAliases) throw error;
     console.warn(
       "Stored repository discovery unavailable",
       error instanceof Error ? error.name : "UnknownError",

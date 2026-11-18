@@ -92,6 +92,10 @@ test("environment and encryption-key endpoints reject anonymous requests", async
     const result = await GET(new NextRequest("http://localhost:3000" + path));
     assert.equal(result.status, 401, path);
   }
+  for (const endpoint of ["discover", "record"]) {
+    const denied = await POST(new NextRequest(`http://localhost:3000/api/env/${endpoint}`, { method: "POST", body: "{}" }));
+    assert.equal(denied.status, 401);
+  }
   const result = await POST(
     new NextRequest("http://localhost:3000/api/env/push", {
       method: "POST",
