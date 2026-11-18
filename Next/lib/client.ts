@@ -1,3 +1,4 @@
+import { unpadEnvBytes } from "../../shared/env-padding";
 import type { EnvFile } from "./contracts";
 export class ClientError extends Error {
   constructor(
@@ -7,14 +8,14 @@ export class ClientError extends Error {
     super(message);
   }
 }
-export async function api<T>(path: string, data?: object): Promise<T> {
+export async function api<T>(path: string, data?: object, signal?: AbortSignal): Promise<T> {
   try {
     const response = await fetch(path, {
       method: data ? "POST" : "GET",
       headers: data ? { "Content-Type": "application/json" } : undefined,
       body: data ? JSON.stringify(data) : undefined,
       cache: "no-store",
-      signal: AbortSignal.timeout(20000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000),
     });
     const result = await response.json().catch(() => {
       throw new ClientError(
@@ -56,16 +57,19 @@ export function safeFilename(name: string) {
     name.replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").replace(/^\.+$/, "_") || ".env"
   );
 }
-export async function decrypt(file: EnvFile): Promise<string> {
+export async function decrypt(
+  file: EnvFile,
+  loadKey = () => api<{ encryptionKey: string }>("/api/encryption-key"),
+): Promise<string> {
   if (!file.isEncrypted) return file.content;
   const [{ encryptionKey }, { default: CryptoJS }] = await Promise.all([
-    api<{ encryptionKey: string }>("/api/encryption-key"),
+    loadKey(),
     import("crypto-js"),
   ]);
-  const value = CryptoJS.AES.decrypt(file.content, encryptionKey).toString(
-    CryptoJS.enc.Utf8,
-  );
-  if (!value && file.content.length > 44)
+  const parsed = CryptoJS.format.OpenSSL.parse(file.content);
+  if (!encryptionKey || parsed.salt?.sigBytes !== 8)
     throw new Error("Could not decrypt this file");
-  return value;
+  const bytes = CryptoJS.AES.decrypt(parsed, encryptionKey, { padding: CryptoJS.pad.NoPadding });
+  unpadEnvBytes(bytes);
+  return bytes.toString(CryptoJS.enc.Utf8);
 }

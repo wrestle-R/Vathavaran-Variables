@@ -14,6 +14,7 @@ import { api, ClientError, date, decrypt, safeFilename } from "@/lib/client";
 import type { EnvFile } from "@/lib/contracts";
 import { groupFilesByDirectory } from "@/lib/env-files";
 import { CopyButton } from "./copy";
+import { VariableSearch } from "./variable-search";
 export function RepositoryView({ name }: { name: string }) {
   const [files, setFiles] = useState<EnvFile[]>([]),
     [loading, setLoading] = useState(true),
@@ -151,6 +152,7 @@ export function RepositoryView({ name }: { name: string }) {
           <Plus size={16} /> Upload file
         </button>
       </div>
+      {!loading && !error && <VariableSearch key={name} repository={name} />}
       {error && (
         <div className="error-message" role="alert">
           {error}

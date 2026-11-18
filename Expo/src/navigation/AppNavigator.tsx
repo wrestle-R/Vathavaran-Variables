@@ -8,6 +8,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardScreen } from '@/screens/DashboardScreen';
 import { LoginScreen } from '@/screens/LoginScreen';
+import { VariableSearchScreen } from '@/screens/VariableSearchScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { RepositoriesScreen } from '@/screens/RepositoriesScreen';
 import { RepositoryDetailsScreen } from '@/screens/RepositoryDetailsScreen';
@@ -16,10 +17,12 @@ import { navigationDarkTheme, navigationLightTheme, useAppTheme } from '@/theme'
 export type RepositoriesStackParamList = {
   Repositories: undefined;
   RepositoryDetails: { repoFullName: string };
+  RepositorySearch: { repoFullName: string };
 };
 
 export type AppTabParamList = {
   Dashboard: undefined;
+  Search: undefined;
   Repos: NavigatorScreenParams<RepositoriesStackParamList>;
   Profile: undefined;
 };
@@ -53,6 +56,7 @@ function RepositoriesStackScreen() {
         component={RepositoryDetailsScreen}
         options={{ title: 'Environment files' }}
       />
+      <RepositoriesStack.Screen name="RepositorySearch" component={VariableSearchScreen} options={{ title: 'Search variables' }} />
     </RepositoriesStack.Navigator>
   );
 }
@@ -83,12 +87,14 @@ function AppTabs() {
         tabBarLabelStyle: { fontFamily: 'DMsans_500Medium', fontSize: 10, marginTop: 4 },
         tabBarIcon: ({ color, size, focused }) => {
           let iconName:
-            'grid' | 'grid-outline' | 'folder' | 'folder-outline' | 'person' | 'person-outline';
+            'grid' | 'grid-outline' | 'folder' | 'folder-outline' | 'person' | 'person-outline' | 'search' | 'search-outline';
 
           if (route.name === 'Dashboard') {
             iconName = focused ? 'grid' : 'grid-outline';
           } else if (route.name === 'Repos') {
             iconName = focused ? 'folder' : 'folder-outline';
+          } else if (route.name === 'Search') {
+            iconName = focused ? 'search' : 'search-outline';
           } else {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -106,6 +112,7 @@ function AppTabs() {
         component={RepositoriesStackScreen}
         options={{ headerShown: false }}
       />
+      <Tab.Screen name="Search" component={VariableSearchScreen} options={{ headerTitle: 'Search variables' }} />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}

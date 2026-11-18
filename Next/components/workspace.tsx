@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api, ClientError } from "@/lib/client";
 import type { GitHubUser, Repository } from "@/lib/contracts";
+import { VariableSearch } from "./variable-search";
 export function Workspace() {
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [repos, setRepos] = useState<Repository[]>([]);
@@ -145,6 +146,7 @@ export function Workspace() {
               <strong>{Object.keys(counts).length}</strong>
             </div>
           </div>
+          {user && <VariableSearch key={user.id} repositories={repos} />}
           <div className="section-label">
             <h2>Repositories</h2>
             <span>{visible.length} available</span>

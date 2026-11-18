@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
@@ -24,6 +25,7 @@ import type { RepositoriesStackParamList } from '@/navigation/AppNavigator';
 import { type AppColors, useAppTheme } from '@/theme';
 export function RepositoryDetailsScreen() {
   const { params } = useRoute<RouteProp<RepositoriesStackParamList, 'RepositoryDetails'>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RepositoriesStackParamList>>();
   const { token } = useAuth();
   const { colors } = useAppTheme();
   const styles = useStyles(createStyles);
@@ -127,6 +129,8 @@ export function RepositoryDetailsScreen() {
                 Encrypted in storage. Decrypted on your device.
               </Text>
             </View>
+            <Button label="Search variables" secondary icon="search-outline"
+              onPress={() => navigation.navigate('RepositorySearch', { repoFullName: params.repoFullName })} />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

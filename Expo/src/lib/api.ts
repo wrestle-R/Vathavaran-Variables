@@ -1,3 +1,4 @@
+import type { MetadataPage } from '../../../shared/env-search';
 import { REQUEST_TIMEOUT_MS, AUTH_CALLBACK_URL, API_BASE_URL } from '@/config/env';
 import type { EnvFile, GitHubRepository, GitHubUser } from '@/types';
 
@@ -21,6 +22,9 @@ export function normalizeAuthToken(token: string): string {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const controller = new AbortController();
+  const cancel = () => controller.abort();
+  if (options.signal?.aborted) cancel();
+  options.signal?.addEventListener('abort', cancel, { once: true });
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? REQUEST_TIMEOUT_MS);
 
   try {
@@ -49,6 +53,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return data as T;
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener('abort', cancel);
   }
 }
 
@@ -112,4 +117,22 @@ export function getEnvList(
     token,
     body: JSON.stringify(repoFullName ? { repoFullName } : {}),
   });
+}
+
+export function discoverEnvFiles(token: string, filters: object, signal: AbortSignal) {
+  return request<MetadataPage>('/api/env/discover', {
+    method: 'POST', token, body: JSON.stringify(filters), signal,
+  });
+}
+
+export function getEnvRecord(token: string, id: string, signal: AbortSignal) {
+  return request<{ file: EnvFile }>('/api/env/record', {
+    method: 'POST', token, body: JSON.stringify({ id }), signal,
+  });
+}
+
+export async function getEncryptionKey(token: string, signal?: AbortSignal) {
+  const data = await request<{ encryptionKey: string }>('/api/encryption-key', { token, signal });
+  if (!data.encryptionKey) throw new Error('Could not load the encryption key');
+  return data.encryptionKey;
 }
